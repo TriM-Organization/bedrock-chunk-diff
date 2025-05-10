@@ -14,6 +14,8 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
+const DefaultMaxLimit = 7
+
 // SubChunkTimeline records the timeline of a sub chunk,
 // and it contains the change logs about this sub chunk
 // on this timeline.

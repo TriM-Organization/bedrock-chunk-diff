@@ -6,8 +6,6 @@ import (
 	"github.com/df-mc/goleveldb/leveldb"
 )
 
-const DefaultMaxLimit = 7
-
 // TimelineDB implements chunk timeline and
 // history record provider based on LevelDB.
 type TimelineDB struct {
