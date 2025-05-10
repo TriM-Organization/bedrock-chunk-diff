@@ -468,6 +468,9 @@ func (s *SubChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 		}
+
+		// Setp 4: Sync data
+		s.latestSubChunk = dst
 	}
 
 	// NBTs
@@ -545,9 +548,13 @@ func (s *SubChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 		}
+
+		// Setp 4: Sync data
+		s.latestNBT = dst
 	}
 
 	s.barrierLeft++
+	s.ptr = max(s.ptr, s.barrierLeft)
 	s.timelineUnixTime = s.timelineUnixTime[1:]
 	success = true
 
