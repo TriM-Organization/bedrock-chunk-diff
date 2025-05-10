@@ -103,9 +103,12 @@ func (s *SubChunkTimeline) Next() (
 		}
 	}
 
+	// Timeline Unix Time
+	updateUnixTime = s.timelineUnixTime[s.ptr-s.barrierLeft]
+
 	s.currentSubChunk = oriLayers
 	s.currentNBT = oriNBTs
 	s.ptr++
 
-	return subChunk, nbts, s.timelineUnixTime[s.ptr-s.barrierLeft], isLastElement, nil
+	return subChunk, nbts, updateUnixTime, isLastElement, nil
 }
