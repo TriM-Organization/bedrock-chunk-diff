@@ -468,9 +468,6 @@ func (s *SubChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 		}
-
-		// Setp 4: Sync data
-		s.latestSubChunk = dst
 	}
 
 	// NBTs
@@ -548,9 +545,6 @@ func (s *SubChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 		}
-
-		// Setp 4: Sync data
-		s.latestNBT = dst
 	}
 
 	s.barrierLeft++
@@ -568,6 +562,8 @@ func (s *SubChunkTimeline) Pop() error {
 // the underlying timeline. Note the poped time points must be the most earliest one.
 func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any, updateUnixTime int64) error {
 	var success bool
+	var newerLayers define.Layers
+	var newerNBTs []define.NBTWithIndex
 
 	for s.barrierRight-s.barrierLeft+1 >= s.maxLimit {
 		if err := s.Pop(); err != nil {
@@ -589,8 +585,6 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 	// Blocks
 	{
-		var newer define.Layers
-
 		diff := define.LayersDiff{}
 		for i := range s.latestSubChunk {
 			diff.Layer(i)
@@ -613,9 +607,9 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 				}
 			}
 
-			_ = newer.Layer(index)
+			_ = newerLayers.Layer(index)
 			diff[index] = define.Difference(s.latestSubChunk.Layer(index), newerBlockMartrix)
-			newer[index] = newerBlockMartrix
+			newerLayers[index] = newerBlockMartrix
 		}
 
 		err := transaction.Put(
@@ -628,7 +622,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 		err = transaction.Put(
 			define.Sum(s.dm, s.position, s.subChunkIndex, define.KeyLatestSubChunk),
-			marshal.LayersToBytes(newer),
+			marshal.LayersToBytes(newerLayers),
 		)
 		if err != nil {
 			return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
@@ -637,8 +631,6 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 	// NBTs
 	{
-		newer := make([]define.NBTWithIndex, 0)
-
 		for _, value := range nbt {
 			x, ok1 := value["x"].(int32)
 			y, ok2 := value["y"].(int32)
@@ -660,10 +652,10 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 			nbtWithIndex.Index.UpdateIndex(uint8(x-xBlock), uint8(deltaY), uint8(z-zBlock))
 			nbtWithIndex.NBT = value
-			newer = append(newer, nbtWithIndex)
+			newerNBTs = append(newerNBTs, nbtWithIndex)
 		}
 
-		diff, err := define.NBTDifference(s.latestNBT, newer)
+		diff, err := define.NBTDifference(s.latestNBT, newerNBTs)
 		if err != nil {
 			return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
 		}
@@ -678,13 +670,15 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 		err = transaction.Put(
 			define.Sum(s.dm, s.position, s.subChunkIndex, []byte(define.KeyLatestNBT)...),
-			marshal.BlockNBTBytes(newer),
+			marshal.BlockNBTBytes(newerNBTs),
 		)
 		if err != nil {
 			return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
 		}
 	}
 
+	s.latestSubChunk = newerLayers
+	s.latestNBT = newerNBTs
 	s.barrierRight++
 	s.timelineUnixTime = append(s.timelineUnixTime, updateUnixTime)
 	success = true
