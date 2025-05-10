@@ -25,8 +25,6 @@ func Difference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
 }
 
 // Restore use old and diff to compute the newer block matrix.
-// The modification is carried out directly on old.
-//
 // Time complexity: O(4096).
 //
 // Note that you could do this operation for all difference array,
@@ -35,8 +33,9 @@ func Difference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
 // In this case, the time complexity is O(n×4096) where n is the length of
 // these difference array.
 func Restore(old BlockMatrix, diff DiffMatrix) BlockMatrix {
+	var result BlockMatrix
 	for index, value := range diff {
-		old[index] = uint16(int(old[index]) + value)
+		result[index] = uint16(int(old[index]) + value)
 	}
-	return old
+	return result
 }

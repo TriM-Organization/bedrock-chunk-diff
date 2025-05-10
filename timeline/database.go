@@ -1,4 +1,4 @@
-package time_line
+package timeline
 
 import "github.com/df-mc/goleveldb/leveldb"
 

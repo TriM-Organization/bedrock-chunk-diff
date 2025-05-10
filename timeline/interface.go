@@ -1,4 +1,4 @@
-package time_line
+package timeline
 
 // LevelDB represent to a level database
 // that implements some basic funtions.
