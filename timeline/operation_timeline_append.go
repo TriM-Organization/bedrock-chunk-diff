@@ -10,8 +10,6 @@ import (
 )
 
 // Append tries append a new sub chunk with block NBT data to the timeline of current sub chunk.
-// updateUnixTime is the arrive time of the sub chunk data.
-//
 // If the size of timeline will overflow max limit, then we will firstly pop some time point from
 // the underlying timeline. Note the poped time points must be the most earliest one.
 func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any) error {
