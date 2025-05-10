@@ -14,6 +14,10 @@ import (
 // blockNBT must contains all NBT blocks from the same sub chunk
 // and in the same time.
 func BlockNBTBytes(blockNBT []define.NBTWithIndex) []byte {
+	if len(blockNBT) == 0 {
+		return nil
+	}
+
 	buf := bytes.NewBuffer(nil)
 	w := protocol.NewWriter(buf, 0)
 
@@ -30,6 +34,10 @@ func BlockNBTBytes(blockNBT []define.NBTWithIndex) []byte {
 // Ensure all element in returned slice all represents the NBT blocks
 // in the same sub chunk and in the same time.
 func BytesToBlockNBT(in []byte) (result []define.NBTWithIndex, err error) {
+	if len(in) == 0 {
+		return
+	}
+
 	originBytes, err := utils.Ungzip(in)
 	if err != nil {
 		err = fmt.Errorf("BytesToBlockNBT: %v", err)
@@ -56,6 +64,10 @@ func BytesToBlockNBT(in []byte) (result []define.NBTWithIndex, err error) {
 
 // MultipleDiffNBTBytes return the bytes represents of diff.
 func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) []byte {
+	if len(diff.Added) == 0 && len(diff.Modified) == 0 {
+		return nil
+	}
+
 	buf := bytes.NewBuffer(nil)
 	w := protocol.NewWriter(buf, 0)
 
@@ -78,6 +90,10 @@ func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) []byte {
 
 // BytesToMultipleDiffNBT decode MultipleDiffNBT from bytes.
 func BytesToMultipleDiffNBT(in []byte) (result define.MultipleDiffNBT, err error) {
+	if len(in) == 0 {
+		return
+	}
+
 	originBytes, err := utils.Ungzip(in)
 	if err != nil {
 		err = fmt.Errorf("BytesToMultipleDiffNBT: %v", err)

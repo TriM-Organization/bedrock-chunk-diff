@@ -10,18 +10,19 @@ import (
 // These are prefixed by only the chunk coordinates and subchunk ID.
 const (
 	KeySubChunkExistStates = '?'
-	KeyDeltaUpdate         = "du"
+	KeyTimelineUnixTime    = 't'
 
-	KeyBlockPalette = "bp"
-	KeyBarrierLeft  = 'l'
-	KeyBarrierRight = 'r'
-	KeyMaxLimit     = 'g'
+	KeyBlockDeltaUpdate = "du"
+	KeyNBTDeltaUpdate   = "du'"
+
+	KeyBlockPalette    = "bp"
+	KeyBarrierAndLimit = "lrg"
 
 	KeyLatestSubChunk = 'm'
 	KeyLatestNBT      = "m'"
 )
 
-// Index returns a byte buffer holding the written index of the sub chunk position passed.
+// Index returns a bytes holding the written index of the sub chunk position passed.
 //
 // Different from standard Minecraft world, we write subChunkIndex first, and then
 // is the x and z position of this sub chunk.
@@ -38,6 +39,34 @@ func Index(dm define.Dimension, position define.ChunkPos, subChunkIndex uint8) [
 	binary.LittleEndian.PutUint16(b[9:], dim)
 
 	return b
+}
+
+// IndexBlockDu returns a bytes holding the written index of the sub chunk position passed,
+// but specially for blocks delta update used key to index.
+func IndexBlockDu(dm define.Dimension, position define.ChunkPos, subChunkIndex uint8, timeID uint) []byte {
+	timeIDBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(timeIDBytes, uint32(timeID))
+	return append(
+		Sum(
+			dm, position, subChunkIndex,
+			[]byte(KeyBlockDeltaUpdate)...,
+		),
+		timeIDBytes...,
+	)
+}
+
+// IndexNBTDu returns a bytes holding the written index of the sub chunk position passed,
+// but specially for NBTs delta update used key to index.
+func IndexNBTDu(dm define.Dimension, position define.ChunkPos, subChunkIndex uint8, timeID uint) []byte {
+	timeIDBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(timeIDBytes, uint32(timeID))
+	return append(
+		Sum(
+			dm, position, subChunkIndex,
+			[]byte(KeyNBTDeltaUpdate)...,
+		),
+		timeIDBytes...,
+	)
 }
 
 // Sum converts Index(dm, position, subChunkIndex) to its []byte representation and appends p.
