@@ -2,6 +2,7 @@ package timeline
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
 	"github.com/TriM-Organization/bedrock-chunk-diff/marshal"
@@ -13,7 +14,7 @@ import (
 //
 // If the size of timeline will overflow max limit, then we will firstly pop some time point from
 // the underlying timeline. Note the poped time points must be the most earliest one.
-func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any, updateUnixTime int64) error {
+func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any) error {
 	var success bool
 	var newerLayers define.Layers
 	var newerNBTs []define.NBTWithIndex
@@ -133,7 +134,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 	s.latestSubChunk = newerLayers
 	s.latestNBT = newerNBTs
 	s.barrierRight++
-	s.timelineUnixTime = append(s.timelineUnixTime, updateUnixTime)
+	s.timelineUnixTime = append(s.timelineUnixTime, time.Now().Unix())
 	success = true
 
 	if s.isEmpty {
