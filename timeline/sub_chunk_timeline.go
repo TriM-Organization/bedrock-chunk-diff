@@ -31,9 +31,12 @@ type SubChunkTimeline struct {
 
 	timelineUnixTime    []int64
 	blockPalette        []block_general.IndexBlockState
-	blockPaletteMapping map[uint32]uint
+	blockPaletteMapping map[uint32]uint16
 
-	ptr          uint
+	ptr             uint
+	currentSubChunk define.Layers
+	currentNBT      []define.NBTWithIndex
+
 	barrierLeft  uint
 	barrierRight uint
 	maxLimit     uint
@@ -66,7 +69,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 		dm:                  dm,
 		position:            position,
 		subChunkIndex:       subChunkIndex,
-		blockPaletteMapping: make(map[uint32]uint),
+		blockPaletteMapping: make(map[uint32]uint16),
 		maxLimit:            DefaultMaxLimit,
 	}
 
@@ -122,7 +125,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 
 			block, _ := block.RuntimeIDToIndexState(blockRuntimeID)
 			result.blockPalette = append(result.blockPalette, block)
-			result.blockPaletteMapping[blockRuntimeID] = uint(len(result.blockPaletteMapping) + 1)
+			result.blockPaletteMapping[blockRuntimeID] = uint16(len(result.blockPaletteMapping) + 1)
 		}
 	}
 

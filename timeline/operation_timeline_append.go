@@ -46,7 +46,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 			diff.Layer(i)
 		}
 
-		for index := range len(diff) {
+		for index := range diff {
 			newerBlockMartrix := define.BlockMatrix{}
 			layer := subChunk.Layer(uint8(index))
 
@@ -54,7 +54,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 			for x := range uint8(16) {
 				for y := range uint8(16) {
 					for z := range uint8(16) {
-						newerBlockMartrix[ptr] = uint16(s.BlockPaletteIndex(layer.At(x, y, z)))
+						newerBlockMartrix[ptr] = s.BlockPaletteIndex(layer.At(x, y, z))
 						ptr++
 					}
 				}
@@ -135,7 +135,11 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 	s.barrierRight++
 	s.timelineUnixTime = append(s.timelineUnixTime, updateUnixTime)
 	success = true
-	s.isEmpty = false
+
+	if s.isEmpty {
+		s.barrierLeft = s.barrierRight
+		s.isEmpty = false
+	}
 
 	return nil
 }
