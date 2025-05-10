@@ -21,6 +21,11 @@ const DefaultMaxLimit = 7
 // on this timeline.
 // In other words, the SubChunkTimeline holds the history
 // of this sub chunk.
+//
+// Note that it's unsafe for multiple thread to access this struct
+// due to we don't consider the race condition.
+// So, you have to make ensure there is only one thread is using
+// the timeline of one sub chunk.
 type SubChunkTimeline struct {
 	db      LevelDB
 	isEmpty bool
@@ -51,14 +56,17 @@ type SubChunkTimeline struct {
 // but return an empty one so you can modify it. The time to create the timeline is only when you
 // save a timeline that not empty to the database.
 //
-// Important: Once any modifications have been made to the returned timeline, you must save them
-// at the end; otherwise, the timeline will not be able to maintain data consistency (only need to
-// save at the last modification).
-//
 // subChunkIndex is an integer that bigger then -1.
 // For example, if a block is at (x,23,z) and is in Overworld, then it is in a sub chunk
 // whose Y position is 23>>4 = 1. However, this is not the index of this sub chunk,
 // we need use (23>>4) - (dm.Range()[0]>>4) to get the index, which is 1-4=-3.
+//
+// Important:
+//   - Once any modifications have been made to the returned timeline, you must save them
+//     at the end; otherwise, the timeline will not be able to maintain data consistency (only need to
+//     save at the last modification).
+//   - It's unsafe for multiple thread to call NewSubChunkTimeline and make changes.
+//     And you have to make ensure there is only one thread is using the timeline of one sub chunk.
 func (t *TimelineDB) NewSubChunkTimeline(
 	dm operator_define.Dimension,
 	position operator_define.ChunkPos,
