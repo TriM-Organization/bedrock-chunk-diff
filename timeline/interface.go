@@ -42,4 +42,5 @@ type Timeline interface {
 type TimelineDatabase interface {
 	LevelDB
 	Timeline
+	CloseTimelineDB() error
 }
