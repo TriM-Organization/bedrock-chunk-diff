@@ -208,8 +208,8 @@ func (s *SubChunkTimeline) Pop() error {
 
 	if s.ptr < s.barrierLeft {
 		s.ptr = s.barrierLeft
-		s.currentSubChunk = blockDst
-		s.currentNBT = nbtDst
+		s.currentSubChunk = define.Layers{}
+		s.currentNBT = nil
 	}
 
 	success = true

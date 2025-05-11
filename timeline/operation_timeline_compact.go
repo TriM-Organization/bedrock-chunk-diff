@@ -84,13 +84,11 @@ func (s *SubChunkTimeline) Compact() error {
 		s.currentNBT = originCurrentNBT
 		if !success {
 			transaction.Discard()
-			s.isEmpty = false
 			return
 		}
 		_ = transaction.Commit()
 	}()
 
-	s.isEmpty = true
 	s.barrierRight = s.barrierLeft - 1
 	s.latestSubChunk = define.Layers{}
 
@@ -104,7 +102,6 @@ func (s *SubChunkTimeline) Compact() error {
 		s.barrierRight++
 	}
 
-	s.isEmpty = false
 	s.blockPalette = newBlockPalette
 	success = true
 
