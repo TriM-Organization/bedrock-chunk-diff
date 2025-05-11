@@ -32,20 +32,36 @@ func (s *SubChunkTimeline) appendBlocks(newerLayers define.Layers, transaction T
 		)
 	}
 
-	err := transaction.Put(
-		define.IndexBlockDu(s.pos, s.barrierRight+1),
-		marshal.LayersDiffToBytes(diff),
-	)
-	if err != nil {
-		return fmt.Errorf("appendBlocks: %v", err)
+	payload := marshal.LayersDiffToBytes(diff)
+	if len(payload) == 0 {
+		err := transaction.Delete(define.IndexBlockDu(s.pos, s.barrierRight+1))
+		if err != nil {
+			return fmt.Errorf("appendBlocks: %v", err)
+		}
+	} else {
+		err := transaction.Put(
+			define.IndexBlockDu(s.pos, s.barrierRight+1),
+			payload,
+		)
+		if err != nil {
+			return fmt.Errorf("appendBlocks: %v", err)
+		}
 	}
 
-	err = transaction.Put(
-		define.Sum(s.pos, define.KeyLatestSubChunk),
-		marshal.LayersToBytes(newerLayers),
-	)
-	if err != nil {
-		return fmt.Errorf("appendBlocks: %v", err)
+	payload = marshal.LayersToBytes(newerLayers)
+	if len(payload) == 0 {
+		err := transaction.Delete(define.Sum(s.pos, define.KeyLatestSubChunk))
+		if err != nil {
+			return fmt.Errorf("appendBlocks: %v", err)
+		}
+	} else {
+		err := transaction.Put(
+			define.Sum(s.pos, define.KeyLatestSubChunk),
+			payload,
+		)
+		if err != nil {
+			return fmt.Errorf("appendBlocks: %v", err)
+		}
 	}
 
 	return nil
@@ -64,20 +80,36 @@ func (s *SubChunkTimeline) appendNBTs(newerNBTs []define.NBTWithIndex, transacti
 		return fmt.Errorf("appendNBTs: %v", err)
 	}
 
-	err = transaction.Put(
-		define.IndexNBTDu(s.pos, s.barrierRight+1),
-		marshal.MultipleDiffNBTBytes(*diff),
-	)
-	if err != nil {
-		return fmt.Errorf("appendNBTs: %v", err)
+	payload := marshal.MultipleDiffNBTBytes(*diff)
+	if len(payload) == 0 {
+		err = transaction.Delete(define.IndexNBTDu(s.pos, s.barrierRight+1))
+		if err != nil {
+			return fmt.Errorf("appendNBTs: %v", err)
+		}
+	} else {
+		err = transaction.Put(
+			define.IndexNBTDu(s.pos, s.barrierRight+1),
+			payload,
+		)
+		if err != nil {
+			return fmt.Errorf("appendNBTs: %v", err)
+		}
 	}
 
-	err = transaction.Put(
-		define.Sum(s.pos, []byte(define.KeyLatestNBT)...),
-		marshal.BlockNBTBytes(newerNBTs),
-	)
-	if err != nil {
-		return fmt.Errorf("appendNBTs: %v", err)
+	payload = marshal.BlockNBTBytes(newerNBTs)
+	if len(payload) == 0 {
+		err = transaction.Delete(define.Sum(s.pos, []byte(define.KeyLatestNBT)...))
+		if err != nil {
+			return fmt.Errorf("appendNBTs: %v", err)
+		}
+	} else {
+		err = transaction.Put(
+			define.Sum(s.pos, []byte(define.KeyLatestNBT)...),
+			payload,
+		)
+		if err != nil {
+			return fmt.Errorf("appendNBTs: %v", err)
+		}
 	}
 
 	return nil

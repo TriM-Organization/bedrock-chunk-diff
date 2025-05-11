@@ -1,9 +1,13 @@
 package timeline
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
+	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
+	"github.com/TriM-Organization/bedrock-world-operator/block"
+	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 )
 
 // Compact compacts the underlying block palette as much as possible, try to delete all unused blocks from it.
@@ -79,12 +83,50 @@ func (s *SubChunkTimeline) Compact() error {
 	s.isEmpty = true
 	s.barrierRight = s.barrierLeft - 1
 
+	// Update each time point
 	for _, value := range newAllTimePoint {
 		err = s.appendBlocks(value, transaction)
 		if err != nil {
 			return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
 		}
 		s.latestSubChunk = value
+	}
+
+	// Update Block Palette
+	{
+		buf := bytes.NewBuffer(nil)
+
+		for _, value := range newBlockPalette.BlockPalette() {
+			blockRuntimeID, found := block.IndexStateToRuntimeID(value)
+			if !found {
+				blockRuntimeID = block.ComputeBlockHash("minecraft:unknown", map[string]any{})
+			}
+			name, states, _ := block.RuntimeIDToState(blockRuntimeID)
+			utils.MarshalNBT(
+				buf,
+				map[string]any{
+					"name":    name,
+					"states":  states,
+					"version": chunk.CurrentBlockVersion,
+				},
+				"",
+			)
+		}
+
+		if buf.Len() == 0 {
+			err = transaction.Delete(define.Sum(s.pos, []byte(define.KeyBlockPalette)...))
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
+			}
+		} else {
+			err = transaction.Put(
+				define.Sum(s.pos, []byte(define.KeyBlockPalette)...),
+				buf.Bytes(),
+			)
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
+			}
+		}
 	}
 
 	s.isEmpty = false

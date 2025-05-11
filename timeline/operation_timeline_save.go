@@ -69,12 +69,19 @@ func (s *SubChunkTimeline) Save() error {
 			buf.Write(temp)
 		}
 
-		err = transaction.Put(
-			define.Sum(s.pos, define.KeyTimelineUnixTime),
-			buf.Bytes(),
-		)
-		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+		if buf.Len() == 0 {
+			err = transaction.Delete(define.Sum(s.pos, define.KeyTimelineUnixTime))
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			}
+		} else {
+			err = transaction.Put(
+				define.Sum(s.pos, define.KeyTimelineUnixTime),
+				buf.Bytes(),
+			)
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			}
 		}
 	}
 
