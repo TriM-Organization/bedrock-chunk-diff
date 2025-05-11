@@ -18,6 +18,12 @@ func (s *SubChunkTimeline) Compact() error {
 		return nil
 	}
 
+	for s.barrierRight-s.barrierLeft+1 > s.maxLimit {
+		if err := s.Pop(); err != nil {
+			return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
+		}
+	}
+
 	originPtr := s.ptr
 	length := s.barrierRight - s.barrierLeft + 1
 	allTimePoint := make([]define.Layers, length)
@@ -63,11 +69,19 @@ func (s *SubChunkTimeline) Compact() error {
 		return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
 	}
 
+	originBarrierLeft := s.barrierLeft
 	originBarrierRight := s.barrierRight
 	originLatestSubChunk := s.latestSubChunk
+	originCurrentSubChunk := s.currentSubChunk
+	originCurrentNBT := s.currentNBT
+
 	defer func() {
+		s.ptr = originPtr
+		s.barrierLeft = originBarrierLeft
 		s.barrierRight = originBarrierRight
 		s.latestSubChunk = originLatestSubChunk
+		s.currentSubChunk = originCurrentSubChunk
+		s.currentNBT = originCurrentNBT
 		if !success {
 			transaction.Discard()
 			s.isEmpty = false

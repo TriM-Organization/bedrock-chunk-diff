@@ -12,6 +12,8 @@ import (
 // then we will do no operation.
 func (s *SubChunkTimeline) Pop() error {
 	var success bool
+	var blockDst define.Layers
+	var nbtDst []define.NBTWithIndex
 
 	if s.isEmpty || s.barrierLeft == s.barrierRight {
 		return nil
@@ -32,7 +34,6 @@ func (s *SubChunkTimeline) Pop() error {
 	// Blocks
 	for range 1 {
 		var ori define.Layers
-		var dst define.Layers
 		var newDiff define.LayersDiff
 
 		// Step 1: Get element 1 from timeline
@@ -78,11 +79,11 @@ func (s *SubChunkTimeline) Pop() error {
 			}
 
 			for index, value := range diff {
-				_ = dst.Layer(index)
-				dst[index] = define.Restore(ori.Layer(index), value)
+				_ = blockDst.Layer(index)
+				blockDst[index] = define.Restore(ori.Layer(index), value)
 			}
 
-			for index, value := range dst {
+			for index, value := range blockDst {
 				_ = newDiff.Layer(index)
 				newDiff[index] = define.Difference(define.BlockMatrix{}, value)
 			}
@@ -119,7 +120,6 @@ func (s *SubChunkTimeline) Pop() error {
 	// NBTs
 	for range 1 {
 		var ori []define.NBTWithIndex
-		var dst []define.NBTWithIndex
 		var newDiff *define.MultipleDiffNBT
 
 		// Setp 1: Get element 1 from timeline
@@ -164,12 +164,12 @@ func (s *SubChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 
-			dst, err = define.NBTRestore(ori, diff)
+			nbtDst, err = define.NBTRestore(ori, diff)
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 
-			newDiff, err = define.NBTDifference(nil, dst)
+			newDiff, err = define.NBTDifference(nil, nbtDst)
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
@@ -204,8 +204,14 @@ func (s *SubChunkTimeline) Pop() error {
 	}
 
 	s.barrierLeft++
-	s.ptr = max(s.ptr, s.barrierLeft)
 	s.timelineUnixTime = s.timelineUnixTime[1:]
+
+	if s.ptr < s.barrierLeft {
+		s.ptr = s.barrierLeft
+		s.currentSubChunk = blockDst
+		s.currentNBT = nbtDst
+	}
+
 	success = true
 
 	return nil

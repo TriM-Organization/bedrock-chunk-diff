@@ -20,7 +20,7 @@ func (s *SubChunkTimeline) Empty() bool {
 func (s *SubChunkTimeline) SetMaxLimit(maxLimit uint) error {
 	s.maxLimit = max(maxLimit, 1)
 
-	for s.barrierRight-s.barrierLeft+1 >= s.maxLimit {
+	for s.barrierRight-s.barrierLeft+1 > s.maxLimit {
 		if err := s.Pop(); err != nil {
 			return fmt.Errorf("(s *SubChunkTimeline) SetMaxLimit: %v", err)
 		}
