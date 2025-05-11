@@ -2,13 +2,12 @@ package define
 
 import (
 	"github.com/TriM-Organization/bedrock-world-operator/block"
-	block_general "github.com/TriM-Organization/bedrock-world-operator/block/general"
 )
 
 // BlockPalette is the block palette for a sub chunk timeline.
 // All time point in this line will share the same palette.
 type BlockPalette struct {
-	bp      []block_general.IndexBlockState
+	bp      []uint32
 	mapping map[uint32]uint16
 }
 
@@ -33,16 +32,7 @@ func (b *BlockPalette) AddBlock(blockRuntimeID uint32) {
 		return
 	}
 
-	name, states, found := block.RuntimeIDToState(blockRuntimeID)
-	if !found {
-		name = "minecraft:unknown"
-		states = make(map[string]any)
-	}
-
-	newerblockRuntimeID, _ := block.StateToRuntimeID(name, states)
-	indexState, _ := block.RuntimeIDToIndexState(newerblockRuntimeID)
-
-	b.bp = append(b.bp, indexState)
+	b.bp = append(b.bp, blockRuntimeID)
 	b.mapping[blockRuntimeID] = uint16(len(b.bp))
 }
 
@@ -67,14 +57,12 @@ func (b *BlockPalette) BlockPaletteIndex(blockRuntimeID uint32) uint16 {
 }
 
 // BlockRuntimeID return the block runtime ID that crresponding to blockPaletteIndex.
-// If target is unknown, then return the runtime ID of minecraft:unknown block.
 // Will not check if blockPaletteIndex is out of index (if out of index, then runtime panic).
 func (b *BlockPalette) BlockRuntimeID(blockPaletteIndex uint16) uint32 {
 	if blockPaletteIndex == 0 {
 		return block.AirRuntimeID
 	}
-	blockRuntimeID, _ := block.IndexStateToRuntimeID(b.bp[blockPaletteIndex-1])
-	return blockRuntimeID
+	return b.bp[blockPaletteIndex-1]
 }
 
 // BlockPaletteLen returns the length of underlying block palette.
@@ -83,20 +71,20 @@ func (b *BlockPalette) BlockPaletteLen() int {
 }
 
 // BlockPalette gets the deep copy of underlying block palette.
-func (b *BlockPalette) BlockPalette() []block_general.IndexBlockState {
-	newOne := make([]block_general.IndexBlockState, len(b.bp))
+// The block palette is actually multiple block runtime IDs.
+func (b *BlockPalette) BlockPalette() []uint32 {
+	newOne := make([]uint32, len(b.bp))
 	copy(newOne, b.bp)
 	return newOne
 }
 
 // SetBlockPalette sets the underlying block palette to newPalette.
-// We assume all elements in newPalette is unique and all is valid Minecraft standard blocks.
-func (b *BlockPalette) SetBlockPalette(newPalette []block_general.IndexBlockState) {
-	b.bp = nil
+// We assume all elements (block runtime IDs) in newPalette is unique
+// and all is valid Minecraft standard blocks.
+func (b *BlockPalette) SetBlockPalette(newPalette []uint32) {
+	b.bp = newPalette
 	b.mapping = make(map[uint32]uint16)
-
-	for _, value := range newPalette {
-		blockRuntimeID, _ := block.IndexStateToRuntimeID(value)
-		b.AddBlock(blockRuntimeID)
+	for key, value := range b.bp {
+		b.mapping[value] = uint16(key)
 	}
 }
