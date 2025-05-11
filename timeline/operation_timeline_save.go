@@ -85,6 +85,30 @@ func (s *SubChunkTimeline) Save() error {
 		}
 	}
 
+	// Latest Time Point Unix Time
+	if len(s.timelineUnixTime) > 0 {
+		latestTimePointUnixTime := s.timelineUnixTime[len(s.timelineUnixTime)-1]
+		if latestTimePointUnixTime == 0 {
+			err = transaction.Delete(define.Sum(s.pos, define.KeyLatestTimePointUnixTime))
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			}
+		} else {
+			latestTimePointUnixTimeBytes := make([]byte, 8)
+			binary.LittleEndian.PutUint64(
+				latestTimePointUnixTimeBytes,
+				uint64(latestTimePointUnixTime),
+			)
+			err = transaction.Put(
+				define.Sum(s.pos, define.KeyLatestTimePointUnixTime),
+				latestTimePointUnixTimeBytes,
+			)
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			}
+		}
+	}
+
 	// Block Palette
 	{
 		buf := bytes.NewBuffer(nil)

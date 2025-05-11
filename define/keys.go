@@ -7,8 +7,9 @@ import (
 // Keys on a per-sub-chunk basis.
 // These are prefixed by only the chunk coordinates and subchunk ID.
 const (
-	KeySubChunkExistStates = '?'
-	KeyTimelineUnixTime    = 't'
+	KeySubChunkExistStates     = '?'
+	KeyTimelineUnixTime        = 't'
+	KeyLatestTimePointUnixTime = 'T'
 
 	KeyBlockDeltaUpdate = "du"
 	KeyNBTDeltaUpdate   = "du'"
