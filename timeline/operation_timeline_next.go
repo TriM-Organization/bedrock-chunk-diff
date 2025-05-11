@@ -84,7 +84,7 @@ func (s *SubChunkTimeline) next() (
 
 // Next gets the next time point of current sub chunk and the NBT blocks in it.
 //
-// With the call to Next, ensure that the returned time keeps increasing until
+// With the call to Next, we granted that the returned time keeps increasing until
 // the entire time series is traversed.
 //
 // isLastElement can inform whether the element obtained after the current call to
