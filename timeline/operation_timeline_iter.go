@@ -122,3 +122,38 @@ func (s *SubChunkTimeline) Next() (
 
 	return
 }
+
+// Last gets the latest time point of current sub chunk and the NBT blocks in it.
+// Time complexity: O(1).
+func (s *SubChunkTimeline) Last() (
+	subChunk *chunk.SubChunk,
+	nbts []map[string]any,
+	updateUnixTime int64,
+) {
+	var oriLayers define.Layers = s.latestSubChunk
+	var oriNBTs []define.NBTWithIndex = s.latestNBT
+
+	// Blocks
+	subChunk = chunk.NewSubChunk(block.AirRuntimeID)
+	for index, value := range oriLayers {
+		layer := subChunk.Layer(uint8(index))
+
+		ptr := 0
+		for x := range uint8(16) {
+			for y := range uint8(16) {
+				for z := range uint8(16) {
+					layer.Set(x, y, z, s.blockPalette.BlockRuntimeID(value[ptr]))
+					ptr++
+				}
+			}
+		}
+	}
+
+	// NBTs
+	nbts = make([]map[string]any, 0)
+	for _, value := range oriNBTs {
+		nbts = append(nbts, value.NBT)
+	}
+
+	return subChunk, nbts, s.timelineUnixTime[len(s.timelineUnixTime)-1]
+}
