@@ -10,7 +10,6 @@ import (
 	"github.com/TriM-Organization/bedrock-world-operator/block"
 	block_general "github.com/TriM-Organization/bedrock-world-operator/block/general"
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
-	operator_define "github.com/TriM-Organization/bedrock-world-operator/define"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
@@ -50,7 +49,7 @@ type SubChunkTimeline struct {
 	latestNBT      []define.NBTWithIndex
 }
 
-// NewSubChunkTimeline gets the timeline of a sub chunk who is in dm, position and subChunkIndex.
+// NewSubChunkTimeline gets the timeline of a sub chunk who is at pos.
 //
 // Note that if timeline of current sub chunk is not exist, then we will not create a timeline
 // but return an empty one so you can modify it. The time to create the timeline is only when you
@@ -75,32 +74,26 @@ type SubChunkTimeline struct {
 //
 //   - Returned SubChunkTimeline can't shared with multiple threads, and it's your responsibility
 //     to ensure this thing.
-func (t *TimelineDB) NewSubChunkTimeline(
-	dm operator_define.Dimension,
-	position operator_define.ChunkPos,
-	subChunkIndex uint8,
-) (result *SubChunkTimeline, err error) {
+func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChunkTimeline, err error) {
 	var success bool
-	result = &SubChunkTimeline{
-		db: t.db,
-		pos: define.DimSubChunk{
-			Dimension:     dm,
-			ChunkPos:      position,
-			SubChunkIndex: subChunkIndex,
-		},
-		blockPaletteMapping: make(map[uint32]uint16),
-		maxLimit:            DefaultMaxLimit,
-	}
-	result.releaseFunc = t.sessions.Require(result.pos)
 
+	releaseFunc := t.sessions.Require(pos)
 	defer func() {
 		if !success {
-			result.releaseFunc()
+			releaseFunc()
 		}
 	}()
 
+	result = &SubChunkTimeline{
+		db:                  t.db,
+		pos:                 pos,
+		releaseFunc:         releaseFunc,
+		blockPaletteMapping: make(map[uint32]uint16),
+		maxLimit:            DefaultMaxLimit,
+	}
+
 	payload, err := t.db.Get(
-		define.Sum(result.pos, define.KeySubChunkExistStates),
+		define.Sum(pos, define.KeySubChunkExistStates),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -114,7 +107,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Timeline Unix Time
 	{
 		payload, err := t.db.Get(
-			define.Sum(result.pos, define.KeyTimelineUnixTime),
+			define.Sum(pos, define.KeyTimelineUnixTime),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -128,7 +121,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Block Palette
 	{
 		blockPaletteBytes, err := t.db.Get(
-			define.Sum(result.pos, []byte(define.KeyBlockPalette)...),
+			define.Sum(pos, []byte(define.KeyBlockPalette)...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -158,7 +151,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Barrier and Max limit
 	{
 		payload, err := t.db.Get(
-			define.Sum(result.pos, []byte(define.KeyBarrierAndLimit)...),
+			define.Sum(pos, []byte(define.KeyBarrierAndLimit)...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -175,7 +168,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Latest Sub Chunk
 	{
 		latestSubChunkBytes, err := t.db.Get(
-			define.Sum(result.pos, define.KeyLatestSubChunk),
+			define.Sum(pos, define.KeyLatestSubChunk),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -192,7 +185,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Latest NBT
 	{
 		latestNBTBytes, err := t.db.Get(
-			define.Sum(result.pos, []byte(define.KeyLatestNBT)...),
+			define.Sum(pos, []byte(define.KeyLatestNBT)...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -208,4 +201,88 @@ func (t *TimelineDB) NewSubChunkTimeline(
 
 	success = true
 	return result, nil
+}
+
+// DeleteSubChunkTimeLine delete the timeline of sub chunk who at pos.
+// If timeline is not exist, then do no operation.
+//
+// Time complexity: O(n).
+// n is the time point that this sub chunk have.
+func (t *TimelineDB) DeleteSubChunkTimeLine(pos define.DimSubChunk) error {
+	var success bool
+
+	timeline, err := t.NewSubChunkTimeline(pos)
+	if err != nil {
+		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+	}
+	defer func() {
+		timeline.releaseFunc()
+	}()
+
+	if timeline.isEmpty {
+		return nil
+	}
+
+	transaction, err := t.db.OpenTransaction()
+	if err != nil {
+		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+	}
+	defer func() {
+		if !success {
+			transaction.Discard()
+			return
+		}
+		_ = transaction.Commit()
+	}()
+
+	// Exist states
+	err = transaction.Delete(define.Sum(pos, define.KeySubChunkExistStates))
+	if err != nil {
+		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+	}
+
+	// Timeline Unix Time
+	err = transaction.Delete(define.Sum(pos, define.KeyTimelineUnixTime))
+	if err != nil {
+		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+	}
+
+	// Block Palette
+	err = transaction.Delete(define.Sum(pos, []byte(define.KeyBlockPalette)...))
+	if err != nil {
+		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+	}
+
+	// Barrier and Max limit
+	err = transaction.Delete(define.Sum(pos, []byte(define.KeyBarrierAndLimit)...))
+	if err != nil {
+		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+	}
+
+	// Latest Sub Chunk
+	err = transaction.Delete(define.Sum(pos, define.KeyLatestSubChunk))
+	if err != nil {
+		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+	}
+
+	// Latest NBT
+	err = transaction.Delete(define.Sum(pos, []byte(define.KeyLatestNBT)...))
+	if err != nil {
+		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+	}
+
+	// Each delta update
+	for i := timeline.barrierLeft; i <= timeline.barrierRight; i++ {
+		err = transaction.Delete(define.IndexBlockDu(pos, i))
+		if err != nil {
+			return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		}
+		err = transaction.Delete(define.IndexNBTDu(pos, i))
+		if err != nil {
+			return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		}
+	}
+
+	success = true
+	return nil
 }
