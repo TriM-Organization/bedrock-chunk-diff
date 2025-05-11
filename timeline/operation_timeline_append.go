@@ -65,7 +65,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 		}
 
 		err := transaction.Put(
-			define.IndexBlockDu(s.dm, s.position, s.subChunkIndex, s.barrierRight+1),
+			define.IndexBlockDu(s.pos, s.barrierRight+1),
 			marshal.LayersDiffToBytes(diff),
 		)
 		if err != nil {
@@ -73,7 +73,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 		}
 
 		err = transaction.Put(
-			define.Sum(s.dm, s.position, s.subChunkIndex, define.KeyLatestSubChunk),
+			define.Sum(s.pos, define.KeyLatestSubChunk),
 			marshal.LayersToBytes(newerLayers),
 		)
 		if err != nil {
@@ -94,8 +94,8 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 			nbtWithIndex := define.NBTWithIndex{}
 
-			xBlock, zBlock := s.position[0]<<4, s.position[0]<<4
-			yBlock := (int32(s.subChunkIndex) - int32(s.dm.Range()[0])) << 4
+			xBlock, zBlock := s.pos.ChunkPos[0]<<4, s.pos.ChunkPos[1]<<4
+			yBlock := (int32(s.pos.SubChunkIndex) - int32(s.pos.Dimension.Range()[0])) << 4
 
 			deltaY := y - yBlock
 			if deltaY < 0 || deltaY > 15 {
@@ -113,7 +113,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 		}
 
 		err = transaction.Put(
-			define.IndexNBTDu(s.dm, s.position, s.subChunkIndex, s.barrierRight+1),
+			define.IndexNBTDu(s.pos, s.barrierRight+1),
 			marshal.MultipleDiffNBTBytes(*diff),
 		)
 		if err != nil {
@@ -121,7 +121,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 		}
 
 		err = transaction.Put(
-			define.Sum(s.dm, s.position, s.subChunkIndex, []byte(define.KeyLatestNBT)...),
+			define.Sum(s.pos, []byte(define.KeyLatestNBT)...),
 			marshal.BlockNBTBytes(newerNBTs),
 		)
 		if err != nil {

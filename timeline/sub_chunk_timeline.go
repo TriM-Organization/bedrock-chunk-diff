@@ -22,17 +22,17 @@ const DefaultMaxLimit = 7
 // In other words, the SubChunkTimeline holds the history
 // of this sub chunk.
 //
-// Note that it's unsafe for multiple thread to access this struct
-// due to we don't consider the race condition.
-// So, you have to make ensure there is only one thread is using
-// the timeline of one sub chunk.
+// Note that it's unsafe for multiple thread to access this
+// struct due to we don't use mutex to ensure the operation
+// is atomic.
+//
+// So, it's your responsibility to make ensure there is only
+// one thread is using this object.
 type SubChunkTimeline struct {
-	db      LevelDB
-	isEmpty bool
-
-	dm            operator_define.Dimension
-	position      operator_define.ChunkPos
-	subChunkIndex uint8
+	db          LevelDB
+	pos         define.DimSubChunk
+	releaseFunc func()
+	isEmpty     bool
 
 	timelineUnixTime    []int64
 	blockPalette        []block_general.IndexBlockState
@@ -62,27 +62,43 @@ type SubChunkTimeline struct {
 // we need use (23>>4) - (dm.Range()[0]>>4) to get the index, which is 1-4=-3.
 //
 // Important:
+//
 //   - Once any modifications have been made to the returned timeline, you must save them
-//     at the end; otherwise, the timeline will not be able to maintain data consistency (only need to
-//     save at the last modification).
-//   - It's unsafe for multiple thread to call NewSubChunkTimeline and make changes.
-//     And you have to make ensure there is only one thread is using the timeline of one sub chunk.
+//     at the end; otherwise, the timeline will not be able to maintain data consistency
+//     (only need to save at the last modification).
+//
+//   - Timeline of one sub chunk can't be using by multiple threads. Therefore, you will
+//     get blocking when a thread calling NewSubChunkTimeline but there is still some
+//     threads are using target sub chunk.
+//
+//   - Returned SubChunkTimeline can't shared with multiple threads, and it's your responsibility
+//     to ensure this thing.
 func (t *TimelineDB) NewSubChunkTimeline(
 	dm operator_define.Dimension,
 	position operator_define.ChunkPos,
 	subChunkIndex uint8,
 ) (result *SubChunkTimeline, err error) {
+	var success bool
 	result = &SubChunkTimeline{
-		db:                  t.db,
-		dm:                  dm,
-		position:            position,
-		subChunkIndex:       subChunkIndex,
+		db: t.db,
+		pos: define.DimSubChunk{
+			Dimension:     dm,
+			ChunkPos:      position,
+			SubChunkIndex: subChunkIndex,
+		},
 		blockPaletteMapping: make(map[uint32]uint16),
 		maxLimit:            DefaultMaxLimit,
 	}
+	result.releaseFunc = t.sessions.Require(result.pos)
+
+	defer func() {
+		if !success {
+			result.releaseFunc()
+		}
+	}()
 
 	payload, err := t.db.Get(
-		define.Sum(dm, position, subChunkIndex, define.KeySubChunkExistStates),
+		define.Sum(result.pos, define.KeySubChunkExistStates),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -96,7 +112,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Timeline Unix Time
 	{
 		payload, err := t.db.Get(
-			define.Sum(dm, position, subChunkIndex, define.KeyTimelineUnixTime),
+			define.Sum(result.pos, define.KeyTimelineUnixTime),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -110,7 +126,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Block Palette
 	{
 		blockPaletteBytes, err := t.db.Get(
-			define.Sum(dm, position, subChunkIndex, []byte(define.KeyBlockPalette)...),
+			define.Sum(result.pos, []byte(define.KeyBlockPalette)...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -140,7 +156,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Barrier and Max limit
 	{
 		payload, err := t.db.Get(
-			define.Sum(dm, position, subChunkIndex, []byte(define.KeyBarrierAndLimit)...),
+			define.Sum(result.pos, []byte(define.KeyBarrierAndLimit)...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -157,7 +173,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Latest Sub Chunk
 	{
 		latestSubChunkBytes, err := t.db.Get(
-			define.Sum(dm, position, subChunkIndex, define.KeyLatestSubChunk),
+			define.Sum(result.pos, define.KeyLatestSubChunk),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -174,7 +190,7 @@ func (t *TimelineDB) NewSubChunkTimeline(
 	// Latest NBT
 	{
 		latestNBTBytes, err := t.db.Get(
-			define.Sum(dm, position, subChunkIndex, []byte(define.KeyLatestNBT)...),
+			define.Sum(result.pos, []byte(define.KeyLatestNBT)...),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
@@ -188,5 +204,6 @@ func (t *TimelineDB) NewSubChunkTimeline(
 		result.latestNBT = latestNBT
 	}
 
+	success = true
 	return result, nil
 }

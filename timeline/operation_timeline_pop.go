@@ -38,7 +38,7 @@ func (s *SubChunkTimeline) Pop() error {
 		// Step 1: Get element 1 from timeline
 		{
 			payload, err := transaction.Get(
-				define.IndexBlockDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft),
+				define.IndexBlockDu(s.pos, s.barrierLeft),
 			)
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
@@ -58,14 +58,14 @@ func (s *SubChunkTimeline) Pop() error {
 		// Setp 2: Get element 2 from timeline
 		{
 			payload, err := transaction.Get(
-				define.IndexBlockDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft+1),
+				define.IndexBlockDu(s.pos, s.barrierLeft+1),
 			)
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 
 			if len(payload) == 0 {
-				err = transaction.Delete(define.IndexBlockDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft))
+				err = transaction.Delete(define.IndexBlockDu(s.pos, s.barrierLeft))
 				if err != nil {
 					return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 				}
@@ -90,14 +90,14 @@ func (s *SubChunkTimeline) Pop() error {
 
 		// Setp 3: Pop
 		{
-			err := transaction.Delete(define.IndexBlockDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft))
+			err := transaction.Delete(define.IndexBlockDu(s.pos, s.barrierLeft))
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 
 			payload := marshal.LayersDiffToBytes(newDiff)
 			err = transaction.Put(
-				define.IndexBlockDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft+1),
+				define.IndexBlockDu(s.pos, s.barrierLeft+1),
 				payload,
 			)
 			if err != nil {
@@ -115,7 +115,7 @@ func (s *SubChunkTimeline) Pop() error {
 		// Setp 1: Get element 1 from timeline
 		{
 			payload, err := transaction.Get(
-				define.IndexNBTDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft),
+				define.IndexNBTDu(s.pos, s.barrierLeft),
 			)
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
@@ -135,14 +135,14 @@ func (s *SubChunkTimeline) Pop() error {
 		// Setp 2: Get element 2 from timeline
 		{
 			payload, err := transaction.Get(
-				define.IndexNBTDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft+1),
+				define.IndexNBTDu(s.pos, s.barrierLeft+1),
 			)
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 
 			if len(payload) == 0 {
-				err = transaction.Delete(define.IndexNBTDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft))
+				err = transaction.Delete(define.IndexNBTDu(s.pos, s.barrierLeft))
 				if err != nil {
 					return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 				}
@@ -167,14 +167,14 @@ func (s *SubChunkTimeline) Pop() error {
 
 		// Setp 3: Pop
 		{
-			err := transaction.Delete(define.IndexNBTDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft))
+			err := transaction.Delete(define.IndexNBTDu(s.pos, s.barrierLeft))
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 
 			payload := marshal.MultipleDiffNBTBytes(*newDiff)
 			err = transaction.Put(
-				define.IndexNBTDu(s.dm, s.position, s.subChunkIndex, s.barrierLeft+1),
+				define.IndexNBTDu(s.pos, s.barrierLeft+1),
 				payload,
 			)
 			if err != nil {

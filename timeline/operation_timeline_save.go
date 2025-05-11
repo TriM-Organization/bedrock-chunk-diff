@@ -32,10 +32,11 @@ func (s *SubChunkTimeline) Save() error {
 			return
 		}
 		_ = transaction.Commit()
+		s.releaseFunc()
 	}()
 
 	err = transaction.Put(
-		define.Sum(s.dm, s.position, s.subChunkIndex, define.KeySubChunkExistStates),
+		define.Sum(s.pos, define.KeySubChunkExistStates),
 		[]byte{1},
 	)
 	if err != nil {
@@ -53,7 +54,7 @@ func (s *SubChunkTimeline) Save() error {
 		}
 
 		err = transaction.Put(
-			define.Sum(s.dm, s.position, s.subChunkIndex, define.KeyTimelineUnixTime),
+			define.Sum(s.pos, define.KeyTimelineUnixTime),
 			buf.Bytes(),
 		)
 		if err != nil {
@@ -83,13 +84,13 @@ func (s *SubChunkTimeline) Save() error {
 		}
 
 		if buf.Len() == 0 {
-			err = transaction.Delete(define.Sum(s.dm, s.position, s.subChunkIndex, []byte(define.KeyBlockPalette)...))
+			err = transaction.Delete(define.Sum(s.pos, []byte(define.KeyBlockPalette)...))
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
 			}
 		} else {
 			err = transaction.Put(
-				define.Sum(s.dm, s.position, s.subChunkIndex, []byte(define.KeyBlockPalette)...),
+				define.Sum(s.pos, []byte(define.KeyBlockPalette)...),
 				buf.Bytes(),
 			)
 			if err != nil {
@@ -107,7 +108,7 @@ func (s *SubChunkTimeline) Save() error {
 		binary.LittleEndian.PutUint32(result[8:], uint32(s.maxLimit))
 
 		err = transaction.Put(
-			define.Sum(s.dm, s.position, s.subChunkIndex, []byte(define.KeyBarrierAndLimit)...),
+			define.Sum(s.pos, []byte(define.KeyBarrierAndLimit)...),
 			result,
 		)
 		if err != nil {
@@ -119,13 +120,13 @@ func (s *SubChunkTimeline) Save() error {
 	{
 		payload := marshal.LayersToBytes(s.latestSubChunk)
 		if len(payload) == 0 {
-			err = transaction.Delete(define.Sum(s.dm, s.position, s.subChunkIndex, define.KeyLatestSubChunk))
+			err = transaction.Delete(define.Sum(s.pos, define.KeyLatestSubChunk))
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
 			}
 		} else {
 			err = transaction.Put(
-				define.Sum(s.dm, s.position, s.subChunkIndex, define.KeyLatestSubChunk),
+				define.Sum(s.pos, define.KeyLatestSubChunk),
 				payload,
 			)
 			if err != nil {
@@ -138,13 +139,13 @@ func (s *SubChunkTimeline) Save() error {
 	{
 		payload := marshal.BlockNBTBytes(s.latestNBT)
 		if len(payload) == 0 {
-			err = transaction.Delete(define.Sum(s.dm, s.position, s.subChunkIndex, []byte(define.KeyLatestNBT)...))
+			err = transaction.Delete(define.Sum(s.pos, []byte(define.KeyLatestNBT)...))
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
 			}
 		} else {
 			err = transaction.Put(
-				define.Sum(s.dm, s.position, s.subChunkIndex, []byte(define.KeyLatestNBT)...),
+				define.Sum(s.pos, []byte(define.KeyLatestNBT)...),
 				payload,
 			)
 			if err != nil {

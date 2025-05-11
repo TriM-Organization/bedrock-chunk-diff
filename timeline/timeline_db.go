@@ -9,14 +9,17 @@ import (
 // TimelineDB implements chunk timeline and
 // history record provider based on LevelDB.
 type TimelineDB struct {
-	db LevelDB
+	db       LevelDB
+	sessions *InProgressSession
 }
 
 // NewTimelineDB open a level database that used for
 // chunk delta update whose at path.
 // If not exist, then create a new database.
 func NewTimelineDB(path string) (result *TimelineDB, err error) {
-	result = new(TimelineDB)
+	result = &TimelineDB{
+		sessions: NewInProgressSession(),
+	}
 
 	db, err := leveldb.OpenFile(path, nil)
 	if err != nil {

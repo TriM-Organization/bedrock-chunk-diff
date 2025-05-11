@@ -40,7 +40,7 @@ func (s *SubChunkTimeline) Next() (
 	// Blocks
 	{
 		payload, err := s.db.Get(
-			define.IndexBlockDu(s.dm, s.position, s.subChunkIndex, s.ptr),
+			define.IndexBlockDu(s.pos, s.ptr),
 		)
 		if err != nil {
 			return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
@@ -81,7 +81,7 @@ func (s *SubChunkTimeline) Next() (
 	// NBTs
 	{
 		payload, err := s.db.Get(
-			define.IndexNBTDu(s.dm, s.position, s.subChunkIndex, s.ptr),
+			define.IndexNBTDu(s.pos, s.ptr),
 		)
 		if err != nil {
 			return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
