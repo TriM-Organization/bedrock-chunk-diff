@@ -9,7 +9,7 @@ import (
 // Compact compacts the underlying block palette as much as possible, try to delete all unused blocks from it.
 // Compact is very expensive due to its time complexity is O(C×4096×N×L).
 // N is the count of time point that this timeline have, and L is the average count of layers in all timelines.
-// C is a little big (bigger than 2) due to there are multiple difference/prefix operations need to do.
+// C is a little big (bigger than 2) due to there are multiple difference/prefix-sum operations need to do.
 func (s *SubChunkTimeline) Compact() error {
 	var err error
 	var success bool
