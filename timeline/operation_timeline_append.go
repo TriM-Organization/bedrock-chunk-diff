@@ -124,6 +124,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 				}
 			}
 
+			_ = newerLayers.Layer(index)
 			newerLayers[index] = newerBlockMartrix
 		}
 
