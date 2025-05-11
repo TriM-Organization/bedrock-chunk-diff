@@ -126,7 +126,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 	}()
 
 	// Blocks
-	{
+	if !subChunk.Empty() {
 		for index, layer := range subChunk.Layers() {
 			newerBlockMartrix := define.BlockMatrix{}
 
