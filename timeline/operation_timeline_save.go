@@ -17,6 +17,7 @@ import (
 //
 // That means, if you calling Save and get a nil error,
 // then this timeline is released and can't be used again.
+// Also, you can't call Save multiple times.
 //
 // But, if Save returned non-nil error, then this object
 // will not released.

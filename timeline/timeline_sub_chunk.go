@@ -102,6 +102,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	if len(payload) == 0 {
 		result.isEmpty = true
+		success = true
 		return result, nil
 	}
 

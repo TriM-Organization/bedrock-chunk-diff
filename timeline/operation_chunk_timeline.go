@@ -6,7 +6,7 @@ import "fmt"
 // the underlying database, and also release each sub chunk timeline.
 //
 // That means, after calling Save, any timeline from this object
-// can't be used again.
+// can't be used again. Also, you can't call Save multiple times.
 //
 // Note that we will not check whether it has been released,
 // nor will we check whether you have called Save multiple times.
