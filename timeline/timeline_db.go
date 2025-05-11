@@ -1,6 +1,7 @@
 package timeline
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/df-mc/goleveldb/leveldb"
@@ -28,4 +29,28 @@ func Open(path string) (result TimelineDatabase, err error) {
 
 	timelineDB.LevelDB = &database{ldb: db}
 	return timelineDB, nil
+}
+
+// CloseTimelineDB closed the timeline database.
+// It will wait until all the timelines in use
+// are released before closing the database.
+func (t *TimelineDB) CloseTimelineDB() error {
+	allPendingCtx := make([]context.Context, 0)
+
+	t.sessions.mu.Lock()
+	for _, value := range t.sessions.session {
+		allPendingCtx = append(allPendingCtx, value)
+	}
+	t.sessions.closed = true
+	t.sessions.mu.Unlock()
+
+	for _, value := range allPendingCtx {
+		<-value.Done()
+	}
+
+	err := t.Close()
+	if err != nil {
+		return fmt.Errorf("CloseTimelineDB: %v", err)
+	}
+	return nil
 }

@@ -12,6 +12,7 @@ import (
 // InProgressSession holds the timelines that are still in use.
 type InProgressSession struct {
 	mu      *sync.Mutex
+	closed  bool
 	session map[define.DimSubChunk]context.Context
 }
 
@@ -29,13 +30,19 @@ func NewInProgressSession() *InProgressSession {
 // If there is one thread is using the target timeline, then calling
 // Require will blocking until they finish there using.
 //
-// Calling the returned function to show you release this timeline,
-// and then other thread could start to using them.
-func (i *InProgressSession) Require(pos define.DimSubChunk) func() {
+// Calling releaseFunc to show you release this timeline, and then other
+// thread could start to using them.
+// If you get Require returned false, then that means the underlying
+// database is closed.
+func (i *InProgressSession) Require(pos define.DimSubChunk) (releaseFunc func(), success bool) {
 	var cancelFunc context.CancelFunc
 
 	for {
 		i.mu.Lock()
+		if i.closed {
+			i.mu.Unlock()
+			return nil, false
+		}
 		ctx, ok := i.session[pos]
 		i.mu.Unlock()
 
@@ -45,6 +52,10 @@ func (i *InProgressSession) Require(pos define.DimSubChunk) func() {
 
 		i.mu.Lock()
 		{
+			if i.closed {
+				i.mu.Unlock()
+				return nil, false
+			}
 			if _, ok = i.session[pos]; ok {
 				i.mu.Unlock()
 				continue
@@ -69,5 +80,5 @@ func (i *InProgressSession) Require(pos define.DimSubChunk) func() {
 		i.mu.Unlock()
 	}
 
-	return sync.OnceFunc(release)
+	return sync.OnceFunc(release), true
 }

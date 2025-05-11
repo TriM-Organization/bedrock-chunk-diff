@@ -74,7 +74,11 @@ type SubChunkTimeline struct {
 func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChunkTimeline, err error) {
 	var success bool
 
-	releaseFunc := t.sessions.Require(pos)
+	releaseFunc, succ := t.sessions.Require(pos)
+	if !succ {
+		return nil, fmt.Errorf("NewSubChunkTimeline: Underlying database is closed")
+	}
+
 	defer func() {
 		if !success {
 			releaseFunc()
