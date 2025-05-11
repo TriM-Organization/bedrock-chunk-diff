@@ -2,6 +2,14 @@ package timeline
 
 import "fmt"
 
+// SaveNOP releases each sub chunk timeline of this chunk,
+// and don't do more things (will not change ths database).
+func (c *ChunkTimeline) SaveNOP() {
+	for _, value := range c.subChunkTimelines {
+		value.SaveNOP()
+	}
+}
+
 // Save saves timelines for all sub chunks in this chunk into
 // the underlying database, and also release each sub chunk timeline.
 //

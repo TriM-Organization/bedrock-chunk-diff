@@ -22,12 +22,9 @@ func (s *SubChunkTimeline) next() (
 
 	// Blocks
 	{
-		payload, err := s.db.Get(
+		payload := s.db.Get(
 			define.IndexBlockDu(s.pos, s.ptr),
 		)
-		if err != nil {
-			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
-		}
 
 		diff, err := marshal.BytesToLayersDiff(payload)
 		if err != nil {
@@ -48,12 +45,9 @@ func (s *SubChunkTimeline) next() (
 
 	// NBTs
 	{
-		payload, err := s.db.Get(
+		payload := s.db.Get(
 			define.IndexNBTDu(s.pos, s.ptr),
 		)
-		if err != nil {
-			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
-		}
 
 		diff, err := marshal.BytesToMultipleDiffNBT(payload)
 		if err != nil {

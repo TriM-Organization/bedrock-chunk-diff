@@ -147,7 +147,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 	}
 	defer func() {
 		if !success {
-			transaction.Discard()
+			_ = transaction.Discard()
 			return
 		}
 		_ = transaction.Commit()

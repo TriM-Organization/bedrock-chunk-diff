@@ -12,6 +12,12 @@ import (
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 )
 
+// SaveNOP releases current sub chunk timeline, and
+// don't do more things (will not change ths database).
+func (s *SubChunkTimeline) SaveNOP() {
+	s.releaseFunc()
+}
+
 // Save saves current timeline into the underlying database,
 // and also release current timeline.
 //
@@ -45,7 +51,7 @@ func (s *SubChunkTimeline) Save() error {
 	}
 	defer func() {
 		if !success {
-			transaction.Discard()
+			_ = transaction.Discard()
 			return
 		}
 		_ = transaction.Commit()

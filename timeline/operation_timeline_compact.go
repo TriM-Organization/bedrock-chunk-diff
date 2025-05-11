@@ -83,7 +83,7 @@ func (s *SubChunkTimeline) Compact() error {
 		s.currentSubChunk = originCurrentSubChunk
 		s.currentNBT = originCurrentNBT
 		if !success {
-			transaction.Discard()
+			_ = transaction.Discard()
 			return
 		}
 		_ = transaction.Commit()

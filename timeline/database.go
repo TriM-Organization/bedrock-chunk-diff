@@ -1,147 +1,125 @@
 package timeline
 
-import "github.com/df-mc/goleveldb/leveldb"
+import (
+	"go.etcd.io/bbolt"
+)
 
-// database wrapper a level database,
+var DatabaseRootKey = []byte("root")
+
+// database wrapper a database,
 // and expose some useful functions.
 type database struct {
-	ldb *leveldb.DB
+	bdb *bbolt.DB
 }
 
 // Has returns true if the DB does contains the given key.
-//
-// It is safe to modify the contents of the argument after Has returns.
-func (db *database) Has(key []byte) (has bool, err error) {
-	return db.ldb.Has(key, nil)
-}
-
-// Get gets the value for the given key. It returns ErrNotFound if the
-// DB does not contains the key.
-//
-// The returned slice is its own copy, it is safe to modify the contents
-// of the returned slice.
-// It is safe to modify the contents of the argument after Get returns.
-//
-// Note that if the key is not exist, then return nil value and nil error.
-func (db *database) Get(key []byte) (value []byte, err error) {
-	value, err = db.ldb.Get(key, nil)
-	if err == leveldb.ErrNotFound {
-		return nil, nil
-	}
+func (db *database) Has(key []byte) (has bool) {
+	db.bdb.View(func(tx *bbolt.Tx) error {
+		has = (tx.Bucket(DatabaseRootKey).Get(key) != nil)
+		return nil
+	})
 	return
 }
 
-// Put sets the value for the given key. It overwrites any previous value
-// for that key; a DB is not a multi-map. Write merge also applies for Put, see
-// Write.
-//
-// It is safe to modify the contents of the arguments after Put returns but not
-// before.
-func (db *database) Put(key []byte, value []byte) error {
-	return db.ldb.Put(key, value, nil)
+// Get retrieves the value for a key in the bucket.
+// Returns a nil value if the key does not exist or if the key is a nested bucket.
+func (db *database) Get(key []byte) (value []byte) {
+	db.bdb.View(func(tx *bbolt.Tx) error {
+		result := tx.Bucket(DatabaseRootKey).Get(key)
+		value = make([]byte, len(result))
+		copy(value, result)
+		return nil
+	})
+	return
 }
 
-// Delete deletes the value for the given key. Delete will not returns error if
-// key doesn't exist. Write merge also applies for Delete, see Write.
-//
-// It is safe to modify the contents of the arguments after Delete returns but
-// not before.
+// Put sets the value for a key in the bucket.
+// If the key exist then its previous value will be overwritten.
+// Returns an error if the key is blank, if the key is too large, or if the value is too large.
+func (db *database) Put(key []byte, value []byte) (err error) {
+	return db.bdb.Update(func(tx *bbolt.Tx) error {
+		return tx.Bucket(DatabaseRootKey).Put(key, value)
+	})
+}
+
+// Delete removes a key from the bucket.
+// If the key does not exist then nothing is done and a nil error is returned.
 func (db *database) Delete(key []byte) error {
-	return db.ldb.Delete(key, nil)
+	return db.bdb.Update(func(tx *bbolt.Tx) error {
+		return tx.Bucket(DatabaseRootKey).Delete(key)
+	})
 }
 
-// Close closes the DB. This will also releases any outstanding snapshot,
-// abort any in-flight compaction and discard open transaction.
-//
-// It is not safe to close a DB until all outstanding iterators are released.
-// It is valid to call Close multiple times. Other methods should not be
-// called after the DB has been closed.
+// Close releases all database resources.
+// It will block waiting for any open transactions to finish
+// before closing the database and returning.
 func (db *database) Close() error {
-	return db.ldb.Close()
+	return db.bdb.Close()
 }
 
-// OpenTransaction opens an atomic DB transaction. Only one transaction can be
-// opened at a time. Subsequent call to Write and OpenTransaction will be blocked
-// until in-flight transaction is committed or discarded.
-// The returned transaction handle is safe for concurrent use.
+// Begin starts a new transaction.
+// Multiple read-only transactions can be used concurrently but only one
+// write transaction can be used at a time. Starting multiple write transactions
+// will cause the calls to block and be serialized until the current write
+// transaction finishes.
 //
-// Transaction is very expensive and can overwhelm compaction, especially if
-// transaction size is small. Use with caution.
-// The rule of thumb is if you need to merge at least same amount of
-// `Options.WriteBuffer` worth of data then use transaction, otherwise don't.
+// Transactions should not be dependent on one another. Opening a read
+// transaction and a write transaction in the same goroutine can cause the
+// writer to deadlock because the database periodically needs to re-mmap itself
+// as it grows and it cannot do that while a read transaction is open.
 //
-// The transaction must be closed once done, either by committing or discarding
-// the transaction.
-// Closing the DB will discard open transaction.
+// If a long running read transaction (for example, a snapshot transaction) is
+// needed, you might want to set DB.InitialMmapSize to a large enough value
+// to avoid potential blocking of write transaction.
+//
+// IMPORTANT: You must close read-only transactions after you are finished or
+// else the database will not reclaim old pages.
 func (db *database) OpenTransaction() (Transaction, error) {
-	t, err := db.ldb.OpenTransaction()
+	tx, err := db.bdb.Begin(true)
 	if err != nil {
 		return nil, err
 	}
-	return &transaction{t: t}, nil
+	return &transaction{tx: tx}, nil
 }
 
-// transaction wrapper a level transaction,
+// transaction wrapper a database transaction,
 // and expose some useful functions.
 type transaction struct {
-	t *leveldb.Transaction
+	tx *bbolt.Tx
 }
 
 // Has returns true if the DB does contains the given key.
-//
-// It is safe to modify the contents of the argument after Has returns.
-func (t *transaction) Has(key []byte) (has bool, err error) {
-	return t.t.Has(key, nil)
+func (t *transaction) Has(key []byte) (has bool) {
+	return (t.tx.Bucket(DatabaseRootKey).Get(key) != nil)
 }
 
-// Get gets the value for the given key. It returns ErrNotFound if the
-// DB does not contains the key.
-//
-// The returned slice is its own copy, it is safe to modify the contents
-// of the returned slice.
-// It is safe to modify the contents of the argument after Get returns.
-//
-// Note that if the key is not exist, then return nil value and nil error.
-func (t *transaction) Get(key []byte) (value []byte, err error) {
-	value, err = t.t.Get(key, nil)
-	if err == leveldb.ErrNotFound {
-		return nil, nil
-	}
-	return
+// Get retrieves the value for a key in the bucket.
+// Returns a nil value if the key does not exist or if the key is a nested bucket.
+func (t *transaction) Get(key []byte) (value []byte) {
+	return t.tx.Bucket(DatabaseRootKey).Get(key)
 }
 
-// Put sets the value for the given key. It overwrites any previous value
-// for that key; a DB is not a multi-map. Write merge also applies for Put, see
-// Write.
-//
-// It is safe to modify the contents of the arguments after Put returns but not
-// before.
+// Put sets the value for a key in the bucket.
+// If the key exist then its previous value will be overwritten.
+// Returns an error if the key is blank, if the key is too large, or if the value is too large.
 func (t *transaction) Put(key []byte, value []byte) error {
-	return t.t.Put(key, value, nil)
+	return t.tx.Bucket(DatabaseRootKey).Put(key, value)
 }
 
-// Delete deletes the value for the given key. Delete will not returns error if
-// key doesn't exist. Write merge also applies for Delete, see Write.
-//
-// It is safe to modify the contents of the arguments after Delete returns but
-// not before.
+// Delete removes a key from the bucket.
+// If the key does not exist then nothing is done and a nil error is returned.
 func (t *transaction) Delete(key []byte) error {
-	return t.t.Delete(key, nil)
+	return t.tx.Bucket(DatabaseRootKey).Delete(key)
 }
 
-// Commit commits the transaction. If error is not nil, then the transaction is
-// not committed, it can then either be retried or discarded.
-//
-// Other methods should not be called after transaction has been committed.
+// Commit writes all changes to disk, updates the meta page and closes the transaction.
+// Returns an error if a disk write error occurs, or if Commit is
+// called on a read-only transaction.
 func (t *transaction) Commit() error {
-	return t.t.Commit()
+	return t.tx.Commit()
 }
 
-// Discard discards the transaction.
-// This method is noop if transaction is already closed (either committed or
-// discarded)
-//
-// Other methods should not be called after transaction has been discarded.
-func (t *transaction) Discard() {
-	t.t.Discard()
+// Discard closes the transaction and ignores all previous updates.
+func (t *transaction) Discard() error {
+	return t.tx.Rollback()
 }

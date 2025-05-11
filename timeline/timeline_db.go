@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/df-mc/goleveldb/leveldb"
+	"go.etcd.io/bbolt"
 )
 
 // TimelineDB implements chunk timeline and
 // history record provider based on LevelDB.
 type TimelineDB struct {
-	LevelDB
+	DB
 	sessions *InProgressSession
 }
 
@@ -22,12 +22,23 @@ func Open(path string) (result TimelineDatabase, err error) {
 		sessions: NewInProgressSession(),
 	}
 
-	db, err := leveldb.OpenFile(path, nil)
+	db, err := bbolt.Open(path, 0600, &bbolt.Options{
+		FreelistType: bbolt.FreelistMapType,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("Open: %v", err)
 	}
 
-	timelineDB.LevelDB = &database{ldb: db}
+	err = db.Update(func(tx *bbolt.Tx) error {
+		_, err = tx.CreateBucketIfNotExists(DatabaseRootKey)
+		return err
+	})
+	if err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("Open: %v", err)
+	}
+
+	timelineDB.DB = &database{bdb: db}
 	return timelineDB, nil
 }
 

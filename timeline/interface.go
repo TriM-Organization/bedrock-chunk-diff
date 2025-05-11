@@ -3,25 +3,23 @@ package timeline
 import "github.com/TriM-Organization/bedrock-chunk-diff/define"
 
 // DatabaseOperation represents some basic
-// operation that a leveldb database should
-// be implement.
+// operation that a database should be implement.
 type DatabaseOperation interface {
 	Delete(key []byte) error
-	Get(key []byte) (value []byte, err error)
-	Has(key []byte) (has bool, err error)
-	Put(key []byte, value []byte) error
+	Get(key []byte) (value []byte)
+	Has(key []byte) (has bool)
+	Put(key []byte, value []byte) (err error)
 }
 
-// Transaction represents a transaction in leveldb.
+// Transaction represents a transaction in database.
 type Transaction interface {
 	DatabaseOperation
 	Commit() error
-	Discard()
+	Discard() error
 }
 
-// LevelDB represent to a level database
-// that implements some basic funtions.
-type LevelDB interface {
+// DB represent to a database that implements some basic funtions.
+type DB interface {
 	DatabaseOperation
 	OpenTransaction() (Transaction, error)
 	Close() error
@@ -40,7 +38,7 @@ type Timeline interface {
 // TimelineDatabase wrapper and implements all features from Timeline,
 // and as a provider to provide timeline of chunk/sub chunk related functions.
 type TimelineDatabase interface {
-	LevelDB
+	DB
 	Timeline
 	CloseTimelineDB() error
 }

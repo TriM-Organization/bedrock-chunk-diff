@@ -10,8 +10,8 @@ import (
 // If not exist, then return 0.
 func (t *TimelineDB) LoadLatestTimePointUnixTime(pos define.DimSubChunk) (timeStamp int64) {
 	keyBytes := define.Sum(pos, define.KeyLatestTimePointUnixTime)
-	data, err := t.Get(keyBytes)
-	if err != nil || len(data) == 0 {
+	data := t.Get(keyBytes)
+	if len(data) == 0 {
 		return 0
 	}
 	return int64(binary.LittleEndian.Uint64(data))

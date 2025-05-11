@@ -26,7 +26,7 @@ const DefaultMaxLimit = 7
 // So, it's your responsibility to make ensure there is only
 // one thread is using this object.
 type SubChunkTimeline struct {
-	db          LevelDB
+	db          DB
 	pos         define.DimSubChunk
 	releaseFunc func()
 	isEmpty     bool
@@ -86,20 +86,16 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 	}()
 
 	result = &SubChunkTimeline{
-		db:           t.LevelDB,
+		db:           t.DB,
 		pos:          pos,
 		releaseFunc:  releaseFunc,
 		blockPalette: define.NewBlockPalette(),
 		maxLimit:     DefaultMaxLimit,
 	}
 
-	payload, err := t.Get(
+	payload := t.Get(
 		define.Sum(pos, define.KeySubChunkExistStates),
 	)
-	if err != nil {
-		return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
-	}
-
 	if len(payload) == 0 {
 		result.isEmpty = true
 		success = true
@@ -108,12 +104,9 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Timeline Unix Time
 	{
-		payload, err := t.Get(
+		payload := t.Get(
 			define.Sum(pos, define.KeyTimelineUnixTime),
 		)
-		if err != nil {
-			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
-		}
 		for len(payload) > 0 {
 			result.timelineUnixTime = append(result.timelineUnixTime, int64(binary.LittleEndian.Uint64(payload)))
 			payload = payload[8:]
@@ -122,12 +115,9 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Block Palette
 	{
-		blockPaletteBytes, err := t.Get(
+		blockPaletteBytes := t.Get(
 			define.Sum(pos, []byte(define.KeyBlockPalette)...),
 		)
-		if err != nil {
-			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
-		}
 		buf := bytes.NewBuffer(blockPaletteBytes)
 
 		for buf.Len() > 0 {
@@ -147,12 +137,9 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Barrier and Max limit
 	{
-		payload, err := t.Get(
+		payload := t.Get(
 			define.Sum(pos, []byte(define.KeyBarrierAndLimit)...),
 		)
-		if err != nil {
-			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
-		}
 		if len(payload) < 12 {
 			return nil, fmt.Errorf("NewSubChunkTimeline: Barrier and limit is broken (only get %d bytes but expected 12)", len(payload))
 		}
@@ -164,12 +151,9 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Latest Sub Chunk
 	{
-		latestSubChunkBytes, err := t.Get(
+		latestSubChunkBytes := t.Get(
 			define.Sum(pos, define.KeyLatestSubChunk),
 		)
-		if err != nil {
-			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
-		}
 
 		blockMatrix, err := marshal.BytesToLayers(latestSubChunkBytes)
 		if err != nil {
@@ -181,12 +165,9 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Latest NBT
 	{
-		latestNBTBytes, err := t.Get(
+		latestNBTBytes := t.Get(
 			define.Sum(pos, []byte(define.KeyLatestNBT)...),
 		)
-		if err != nil {
-			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
-		}
 
 		latestNBT, err := marshal.BytesToBlockNBT(latestNBTBytes)
 		if err != nil {
@@ -226,7 +207,7 @@ func (t *TimelineDB) DeleteSubChunkTimeline(pos define.DimSubChunk) error {
 	}
 	defer func() {
 		if !success {
-			transaction.Discard()
+			_ = transaction.Discard()
 			return
 		}
 		_ = transaction.Commit()
