@@ -13,9 +13,9 @@ import (
 // BlockNBTBytes return the bytes represents of blockNBT.
 // blockNBT must contains all NBT blocks from the same sub chunk
 // and in the same time.
-func BlockNBTBytes(blockNBT []define.NBTWithIndex) []byte {
+func BlockNBTBytes(blockNBT []define.NBTWithIndex) (result []byte, err error) {
 	if len(blockNBT) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -27,7 +27,11 @@ func BlockNBTBytes(blockNBT []define.NBTWithIndex) []byte {
 		utils.MarshalNBT(buf, value.NBT, "")
 	}
 
-	return utils.Gzip(buf.Bytes())
+	result, err = utils.Gzip(buf.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("BlockNBTBytes: %v", err)
+	}
+	return
 }
 
 // BytesToBlockNBT decode multiple NBTWithIndex from bytes.
@@ -63,15 +67,22 @@ func BytesToBlockNBT(in []byte) (result []define.NBTWithIndex, err error) {
 }
 
 // MultipleDiffNBTBytes return the bytes represents of diff.
-func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) []byte {
-	if len(diff.Added) == 0 && len(diff.Modified) == 0 {
-		return nil
+func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) (result []byte, err error) {
+	if len(diff.Removed) == 0 && len(diff.Added) == 0 && len(diff.Modified) == 0 {
+		return nil, nil
 	}
 
 	buf := bytes.NewBuffer(nil)
 	w := protocol.NewWriter(buf, 0)
 
-	length := uint32(len(diff.Added))
+	length := uint32(len(diff.Removed))
+	w.Varuint32(&length)
+	for _, value := range diff.Removed {
+		val := uint32(value)
+		w.Varuint32(&val)
+	}
+
+	length = uint32(len(diff.Added))
 	w.Varuint32(&length)
 	for _, value := range diff.Added {
 		index := uint32(value.Index)
@@ -85,11 +96,17 @@ func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) []byte {
 		w.ByteSlice(&value.DiffNBT)
 	}
 
-	return utils.Gzip(buf.Bytes())
+	result, err = utils.Gzip(buf.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("MultipleDiffNBTBytes: %v", err)
+	}
+	return
 }
 
 // BytesToMultipleDiffNBT decode MultipleDiffNBT from bytes.
 func BytesToMultipleDiffNBT(in []byte) (result define.MultipleDiffNBT, err error) {
+	var length uint32
+
 	if len(in) == 0 {
 		return
 	}
@@ -104,10 +121,16 @@ func BytesToMultipleDiffNBT(in []byte) (result define.MultipleDiffNBT, err error
 	buf := bytes.NewBuffer(originBytes)
 	r := protocol.NewReader(buf, 0, false)
 
-	var length uint32
+	r.Varuint32(&length)
+	result.Removed = make([]define.SubChunkBlockIndex, length)
+	for i := range length {
+		var value uint32
+		r.Varuint32(&value)
+		result.Removed[i] = define.SubChunkBlockIndex(value)
+	}
+
 	r.Varuint32(&length)
 	result.Added = make([]define.NBTWithIndex, length)
-
 	for i := range length {
 		var object define.NBTWithIndex
 		var index uint32

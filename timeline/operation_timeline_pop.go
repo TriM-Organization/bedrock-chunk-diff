@@ -95,7 +95,10 @@ func (s *SubChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 
-			payload := marshal.LayersDiffToBytes(newDiff)
+			payload, err := marshal.LayersDiffToBytes(newDiff)
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
+			}
 			if len(payload) == 0 {
 				err = transaction.Delete(define.IndexBlockDu(s.pos, s.barrierLeft+1))
 				if err != nil {
@@ -179,7 +182,10 @@ func (s *SubChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 
-			payload := marshal.MultipleDiffNBTBytes(*newDiff)
+			payload, err := marshal.MultipleDiffNBTBytes(*newDiff)
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
+			}
 			if len(payload) == 0 {
 				err = transaction.Delete(define.IndexNBTDu(s.pos, s.barrierLeft+1))
 				if err != nil {

@@ -54,11 +54,11 @@ func NewDiffNBT(olderNBT *NBTWithIndex, newerNBT *NBTWithIndex) (result *DiffNBT
 	n := &DiffNBTWithIndex{Index: olderNBT.Index}
 
 	buf := bytes.NewBuffer(nil)
-	utils.MarshalNBT(buf, olderNBT, "")
+	utils.MarshalNBT(buf, olderNBT.NBT, "")
 	olderNBTBytes := buf.Bytes()
 
 	buf = bytes.NewBuffer(nil)
-	utils.MarshalNBT(buf, newerNBT, "")
+	utils.MarshalNBT(buf, newerNBT.NBT, "")
 	newerNBTBytes := buf.Bytes()
 
 	olderHash := xxhash.Sum64(olderNBTBytes)
@@ -66,7 +66,7 @@ func NewDiffNBT(olderNBT *NBTWithIndex, newerNBT *NBTWithIndex) (result *DiffNBT
 	binary.LittleEndian.PutUint64(olderHashBytes, olderHash)
 
 	newerHash := xxhash.Sum64(newerNBTBytes)
-	newerHashBytes := make([]byte, 4)
+	newerHashBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(newerHashBytes, newerHash)
 
 	buf = bytes.NewBuffer(nil)
@@ -75,7 +75,7 @@ func NewDiffNBT(olderNBT *NBTWithIndex, newerNBT *NBTWithIndex) (result *DiffNBT
 		return nil, fmt.Errorf("NewDiffNBT: %v", err)
 	}
 
-	n.DiffNBT = append(olderHashBytes, newerNBTBytes...)
+	n.DiffNBT = append(olderHashBytes, newerHashBytes...)
 	n.DiffNBT = append(n.DiffNBT, buf.Bytes()...)
 
 	return n, nil
@@ -130,6 +130,7 @@ func (d DiffNBTWithIndex) Restore(olderNBT NBTWithIndex) (result *NBTWithIndex, 
 // All the NBT blocks should in the same position in this sub chunk, and MultipleDiffNBT just refer to the
 // states (add/remove/modify) of these blocks in different times.
 type MultipleDiffNBT struct {
+	Removed  []SubChunkBlockIndex
 	Added    []NBTWithIndex
 	Modified []DiffNBTWithIndex
 }
@@ -151,12 +152,14 @@ func NBTDifference(older []NBTWithIndex, newer []NBTWithIndex) (result *Multiple
 		newerSet[value.Index] = &value
 	}
 
+	removed := make([]SubChunkBlockIndex, 0)
 	removedSet := make(map[SubChunkBlockIndex]bool)
 	added := make([]NBTWithIndex, 0)
 	modified := make([]DiffNBTWithIndex, 0)
 
 	for key := range olderSet {
 		if newerSet[key] == nil {
+			removed = append(removed, key)
 			removedSet[key] = true
 		}
 	}
@@ -185,6 +188,7 @@ func NBTDifference(older []NBTWithIndex, newer []NBTWithIndex) (result *Multiple
 	}
 
 	return &MultipleDiffNBT{
+		Removed:  removed,
 		Added:    added,
 		Modified: modified,
 	}, nil
@@ -195,20 +199,56 @@ func NBTDifference(older []NBTWithIndex, newer []NBTWithIndex) (result *Multiple
 // Time complexity: O(a+C×b), a=len(old), b=len(diff.Modified).
 // Note that C is not very small and is little big due to we use bsdiff and xxhash for each modified NBT block.
 func NBTRestore(old []NBTWithIndex, diff MultipleDiffNBT) (result []NBTWithIndex, err error) {
-	result = make([]NBTWithIndex, len(diff.Added))
-	copy(result, diff.Added)
-
-	olderSet := make(map[SubChunkBlockIndex]NBTWithIndex)
+	// Deep copy
+	oldCopy := make([]NBTWithIndex, 0)
 	for _, value := range old {
-		olderSet[value.Index] = value
+		var m map[string]any
+		buf := bytes.NewBuffer(nil)
+
+		err = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(value.NBT)
+		if err != nil {
+			return nil, fmt.Errorf("NBTRestore: %v", err)
+		}
+
+		err = nbt.NewDecoderWithEncoding(bytes.NewBuffer(buf.Bytes()), nbt.LittleEndian).Decode(&m)
+		if err != nil {
+			return nil, fmt.Errorf("NBTRestore: %v", err)
+		}
+
+		oldCopy = append(oldCopy, NBTWithIndex{
+			Index: value.Index,
+			NBT:   m,
+		})
 	}
 
+	// Added
+	result = append(result, diff.Added...)
+
+	// Modified
+	olderSet := make(map[SubChunkBlockIndex]NBTWithIndex)
+	for _, value := range oldCopy {
+		olderSet[value.Index] = value
+	}
 	for _, value := range diff.Modified {
 		newer, err := value.Restore(olderSet[value.Index])
 		if err != nil {
 			return nil, fmt.Errorf("NBTRestore: %v", err)
 		}
 		result = append(result, *newer)
+	}
+
+	// No change
+	changedSet := make(map[SubChunkBlockIndex]bool)
+	for _, value := range diff.Removed {
+		changedSet[value] = true
+	}
+	for _, value := range diff.Modified {
+		changedSet[value.Index] = true
+	}
+	for _, value := range oldCopy {
+		if !changedSet[value.Index] {
+			result = append(result, value)
+		}
 	}
 
 	return

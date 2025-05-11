@@ -63,21 +63,22 @@ func (s *SubChunkTimeline) Compact() error {
 		return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
 	}
 
-	originLatestSubChunk := s.latestSubChunk
 	originBarrierRight := s.barrierRight
+	originLatestSubChunk := s.latestSubChunk
 	defer func() {
-		if success {
-			_ = transaction.Commit()
-			return
-		}
-		transaction.Discard()
-		s.isEmpty = false
 		s.barrierRight = originBarrierRight
 		s.latestSubChunk = originLatestSubChunk
+		if !success {
+			transaction.Discard()
+			s.isEmpty = false
+			return
+		}
+		_ = transaction.Commit()
 	}()
 
 	s.isEmpty = true
 	s.barrierRight = s.barrierLeft - 1
+	s.latestSubChunk = define.Layers{}
 
 	// Update each time point
 	for _, value := range newAllTimePoint {
@@ -86,6 +87,7 @@ func (s *SubChunkTimeline) Compact() error {
 			return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
 		}
 		s.latestSubChunk = value
+		s.barrierRight++
 	}
 
 	s.isEmpty = false

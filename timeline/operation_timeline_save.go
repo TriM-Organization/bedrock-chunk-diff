@@ -166,7 +166,10 @@ func (s *SubChunkTimeline) Save() error {
 
 	// Latest Sub Chunk
 	{
-		payload := marshal.LayersToBytes(s.latestSubChunk)
+		payload, err := marshal.LayersToBytes(s.latestSubChunk)
+		if err != nil {
+			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+		}
 		if len(payload) == 0 {
 			err = transaction.Delete(define.Sum(s.pos, define.KeyLatestSubChunk))
 			if err != nil {
@@ -185,7 +188,10 @@ func (s *SubChunkTimeline) Save() error {
 
 	// Latest NBT
 	{
-		payload := marshal.BlockNBTBytes(s.latestNBT)
+		payload, err := marshal.BlockNBTBytes(s.latestNBT)
+		if err != nil {
+			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+		}
 		if len(payload) == 0 {
 			err = transaction.Delete(define.Sum(s.pos, []byte(define.KeyLatestNBT)...))
 			if err != nil {

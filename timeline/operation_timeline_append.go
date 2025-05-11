@@ -32,7 +32,10 @@ func (s *SubChunkTimeline) appendBlocks(newerLayers define.Layers, transaction T
 		)
 	}
 
-	payload := marshal.LayersDiffToBytes(diff)
+	payload, err := marshal.LayersDiffToBytes(diff)
+	if err != nil {
+		return fmt.Errorf("appendBlocks: %v", err)
+	}
 	if len(payload) == 0 {
 		err := transaction.Delete(define.IndexBlockDu(s.pos, s.barrierRight+1))
 		if err != nil {
@@ -48,7 +51,10 @@ func (s *SubChunkTimeline) appendBlocks(newerLayers define.Layers, transaction T
 		}
 	}
 
-	payload = marshal.LayersToBytes(newerLayers)
+	payload, err = marshal.LayersToBytes(newerLayers)
+	if err != nil {
+		return fmt.Errorf("appendBlocks: %v", err)
+	}
 	if len(payload) == 0 {
 		err := transaction.Delete(define.Sum(s.pos, define.KeyLatestSubChunk))
 		if err != nil {
@@ -80,7 +86,10 @@ func (s *SubChunkTimeline) appendNBTs(newerNBTs []define.NBTWithIndex, transacti
 		return fmt.Errorf("appendNBTs: %v", err)
 	}
 
-	payload := marshal.MultipleDiffNBTBytes(*diff)
+	payload, err := marshal.MultipleDiffNBTBytes(*diff)
+	if err != nil {
+		return fmt.Errorf("appendNBTs: %v", err)
+	}
 	if len(payload) == 0 {
 		err = transaction.Delete(define.IndexNBTDu(s.pos, s.barrierRight+1))
 		if err != nil {
@@ -96,7 +105,10 @@ func (s *SubChunkTimeline) appendNBTs(newerNBTs []define.NBTWithIndex, transacti
 		}
 	}
 
-	payload = marshal.BlockNBTBytes(newerNBTs)
+	payload, err = marshal.BlockNBTBytes(newerNBTs)
+	if err != nil {
+		return fmt.Errorf("appendNBTs: %v", err)
+	}
 	if len(payload) == 0 {
 		err = transaction.Delete(define.Sum(s.pos, []byte(define.KeyLatestNBT)...))
 		if err != nil {
@@ -180,10 +192,12 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 			nbtWithIndex := define.NBTWithIndex{}
 
 			xBlock, zBlock := s.pos.ChunkPos[0]<<4, s.pos.ChunkPos[1]<<4
-			yBlock := (int32(s.pos.SubChunkIndex) - int32(s.pos.Dimension.Range()[0])) << 4
+			yBlock := (int32(s.pos.SubChunkIndex) + (int32(s.pos.Dimension.Range()[0]) >> 4)) << 4
 
+			deltaX := x - xBlock
 			deltaY := y - yBlock
-			if deltaY < 0 || deltaY > 15 {
+			deltaZ := z - zBlock
+			if deltaX < 0 || deltaX > 15 || deltaY < 0 || deltaY > 15 || deltaZ < 0 || deltaZ > 15 {
 				continue
 			}
 
@@ -206,6 +220,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 	if s.isEmpty {
 		s.barrierLeft = s.barrierRight
+		s.ptr = s.barrierLeft
 		s.isEmpty = false
 	}
 

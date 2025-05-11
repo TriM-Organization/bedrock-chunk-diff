@@ -9,7 +9,7 @@ import (
 )
 
 // LayersToBytes return the bytes represents of layers.
-func LayersToBytes(layers define.Layers) []byte {
+func LayersToBytes(layers define.Layers) (result []byte, err error) {
 	buf := bytes.NewBuffer(nil)
 
 	for _, value := range layers {
@@ -17,9 +17,14 @@ func LayersToBytes(layers define.Layers) []byte {
 	}
 
 	if buf.Len() == 0 {
-		return nil
+		return nil, nil
 	}
-	return utils.Gzip(buf.Bytes())
+
+	result, err = utils.Gzip(buf.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("LayersToBytes: %v", err)
+	}
+	return
 }
 
 // BytesToLayers decode Layers from bytes.
@@ -43,7 +48,7 @@ func BytesToLayers(in []byte) (result define.Layers, err error) {
 }
 
 // LayersDiffToBytes return the bytes represents of layersDiff.
-func LayersDiffToBytes(layersDiff define.LayersDiff) []byte {
+func LayersDiffToBytes(layersDiff define.LayersDiff) (result []byte, err error) {
 	buf := bytes.NewBuffer(nil)
 
 	for _, value := range layersDiff {
@@ -51,9 +56,14 @@ func LayersDiffToBytes(layersDiff define.LayersDiff) []byte {
 	}
 
 	if buf.Len() == 0 {
-		return nil
+		return nil, nil
 	}
-	return utils.Gzip(buf.Bytes())
+
+	result, err = utils.Gzip(buf.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("LayersDiffToBytes: %v", err)
+	}
+	return
 }
 
 // BytesToLayersDiff decode LayersDiff from bytes.
