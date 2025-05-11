@@ -93,19 +93,12 @@ func (s *SubChunkTimeline) Pop() error {
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
-			if len(payload) == 0 {
-				err = transaction.Delete(define.IndexBlockDu(s.pos, s.barrierLeft+1))
-				if err != nil {
-					return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
-				}
-			} else {
-				err = transaction.Put(
-					define.IndexBlockDu(s.pos, s.barrierLeft+1),
-					payload,
-				)
-				if err != nil {
-					return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
-				}
+			err = transaction.Put(
+				define.IndexBlockDu(s.pos, s.barrierLeft+1),
+				payload,
+			)
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 		}
 	}
@@ -172,19 +165,12 @@ func (s *SubChunkTimeline) Pop() error {
 			if err != nil {
 				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
-			if len(payload) == 0 {
-				err = transaction.Delete(define.IndexNBTDu(s.pos, s.barrierLeft+1))
-				if err != nil {
-					return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
-				}
-			} else {
-				err = transaction.Put(
-					define.IndexNBTDu(s.pos, s.barrierLeft+1),
-					payload,
-				)
-				if err != nil {
-					return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
-				}
+			err = transaction.Put(
+				define.IndexNBTDu(s.pos, s.barrierLeft+1),
+				payload,
+			)
+			if err != nil {
+				return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
 			}
 		}
 	}
