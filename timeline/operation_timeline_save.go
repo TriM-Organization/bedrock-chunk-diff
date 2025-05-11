@@ -82,7 +82,7 @@ func (s *SubChunkTimeline) Save() error {
 	{
 		buf := bytes.NewBuffer(nil)
 
-		for _, value := range s.blockPalette {
+		for _, value := range s.blockPalette.BlockPalette() {
 			blockRuntimeID, found := block.IndexStateToRuntimeID(value)
 			if !found {
 				blockRuntimeID = block.ComputeBlockHash("minecraft:unknown", map[string]any{})

@@ -7,8 +7,6 @@ import (
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
 	"github.com/TriM-Organization/bedrock-chunk-diff/marshal"
-	"github.com/TriM-Organization/bedrock-world-operator/block"
-	block_general "github.com/TriM-Organization/bedrock-world-operator/block/general"
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
@@ -33,9 +31,8 @@ type SubChunkTimeline struct {
 	releaseFunc func()
 	isEmpty     bool
 
-	timelineUnixTime    []int64
-	blockPalette        []block_general.IndexBlockState
-	blockPaletteMapping map[uint32]uint16
+	timelineUnixTime []int64
+	blockPalette     *define.BlockPalette
 
 	ptr             uint
 	currentSubChunk define.Layers
@@ -85,11 +82,11 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 	}()
 
 	result = &SubChunkTimeline{
-		db:                  t.db,
-		pos:                 pos,
-		releaseFunc:         releaseFunc,
-		blockPaletteMapping: make(map[uint32]uint16),
-		maxLimit:            DefaultMaxLimit,
+		db:           t.db,
+		pos:          pos,
+		releaseFunc:  releaseFunc,
+		blockPalette: define.NewBlockPalette(),
+		maxLimit:     DefaultMaxLimit,
 	}
 
 	payload, err := t.db.Get(
@@ -138,13 +135,8 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 			if err != nil {
 				return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
 			}
-			if _, ok := result.blockPaletteMapping[blockRuntimeID]; ok {
-				continue
-			}
 
-			block, _ := block.RuntimeIDToIndexState(blockRuntimeID)
-			result.blockPalette = append(result.blockPalette, block)
-			result.blockPaletteMapping[blockRuntimeID] = uint16(len(result.blockPaletteMapping) + 1)
+			result.blockPalette.AddBlock(blockRuntimeID)
 		}
 	}
 

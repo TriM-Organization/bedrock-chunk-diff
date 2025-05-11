@@ -9,6 +9,79 @@ import (
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 )
 
+// "next" is an internal implement detail.
+// The feature of "next" is like one progress of prefix sum.
+func (s *SubChunkTimeline) next() (
+	oriLayers define.Layers, oriNBTs []define.NBTWithIndex, updateUnixTime int64,
+	isLastElement bool, err error,
+) {
+	if s.isEmpty {
+		return nil, nil, 0, false, nil
+	}
+	isLastElement = (s.ptr == s.barrierRight)
+
+	// Blocks
+	{
+		payload, err := s.db.Get(
+			define.IndexBlockDu(s.pos, s.ptr),
+		)
+		if err != nil {
+			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
+		}
+
+		diff, err := marshal.BytesToLayersDiff(payload)
+		if err != nil {
+			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
+		}
+
+		for index := range s.currentSubChunk {
+			_ = oriLayers.Layer(index)
+		}
+		for index := range diff {
+			_ = oriLayers.Layer(index)
+		}
+
+		for index := range oriLayers {
+			oriLayers[index] = define.Restore(s.currentSubChunk.Layer(index), diff.Layer(index))
+		}
+	}
+
+	// NBTs
+	{
+		payload, err := s.db.Get(
+			define.IndexNBTDu(s.pos, s.ptr),
+		)
+		if err != nil {
+			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
+		}
+
+		diff, err := marshal.BytesToMultipleDiffNBT(payload)
+		if err != nil {
+			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
+		}
+
+		oriNBTs, err = define.NBTRestore(s.currentNBT, diff)
+		if err != nil {
+			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
+		}
+	}
+
+	// Timeline Unix Time
+	updateUnixTime = s.timelineUnixTime[s.ptr-s.barrierLeft]
+
+	s.currentSubChunk = oriLayers
+	s.currentNBT = oriNBTs
+	s.ptr++
+
+	if s.ptr > s.barrierRight {
+		s.ptr = s.barrierLeft
+		s.currentSubChunk = define.Layers{}
+		s.currentNBT = nil
+	}
+
+	return oriLayers, oriNBTs, updateUnixTime, isLastElement, nil
+}
+
 // Next gets the next time point of current sub chunk and the NBT blocks in it.
 //
 // With the call to Next, ensure that the returned time keeps increasing until
@@ -26,89 +99,32 @@ func (s *SubChunkTimeline) Next() (
 	var oriLayers define.Layers
 	var oriNBTs []define.NBTWithIndex
 
-	if s.isEmpty {
-		return nil, nil, 0, false, nil
+	oriLayers, oriNBTs, updateUnixTime, isLastElement, err = s.next()
+	if err != nil {
+		return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
 	}
-
-	if s.ptr > s.barrierRight {
-		s.ptr = s.barrierLeft
-		s.currentSubChunk = define.Layers{}
-		s.currentNBT = nil
-	}
-	isLastElement = (s.ptr == s.barrierRight)
 
 	// Blocks
-	{
-		payload, err := s.db.Get(
-			define.IndexBlockDu(s.pos, s.ptr),
-		)
-		if err != nil {
-			return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
-		}
+	subChunk = chunk.NewSubChunk(block.AirRuntimeID)
+	for index, value := range oriLayers {
+		layer := subChunk.Layer(uint8(index))
 
-		diff, err := marshal.BytesToLayersDiff(payload)
-		if err != nil {
-			return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
-		}
-
-		for index := range s.currentSubChunk {
-			_ = oriLayers.Layer(index)
-		}
-		for index := range diff {
-			_ = oriLayers.Layer(index)
-		}
-
-		for index := range oriLayers {
-			oriLayers[index] = define.Restore(s.currentSubChunk.Layer(index), diff.Layer(index))
-		}
-
-		subChunk = chunk.NewSubChunk(block.AirRuntimeID)
-		for index, value := range oriLayers {
-			layer := subChunk.Layer(uint8(index))
-
-			ptr := 0
-			for x := range uint8(16) {
-				for y := range uint8(16) {
-					for z := range uint8(16) {
-						layer.Set(x, y, z, s.BlockRuntimeID(value[ptr]))
-						ptr++
-					}
+		ptr := 0
+		for x := range uint8(16) {
+			for y := range uint8(16) {
+				for z := range uint8(16) {
+					layer.Set(x, y, z, s.blockPalette.BlockRuntimeID(value[ptr]))
+					ptr++
 				}
 			}
 		}
 	}
 
 	// NBTs
-	{
-		payload, err := s.db.Get(
-			define.IndexNBTDu(s.pos, s.ptr),
-		)
-		if err != nil {
-			return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
-		}
-
-		diff, err := marshal.BytesToMultipleDiffNBT(payload)
-		if err != nil {
-			return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
-		}
-
-		oriNBTs, err = define.NBTRestore(s.currentNBT, diff)
-		if err != nil {
-			return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
-		}
-
-		nbts = make([]map[string]any, 0)
-		for _, value := range oriNBTs {
-			nbts = append(nbts, value.NBT)
-		}
+	nbts = make([]map[string]any, 0)
+	for _, value := range oriNBTs {
+		nbts = append(nbts, value.NBT)
 	}
 
-	// Timeline Unix Time
-	updateUnixTime = s.timelineUnixTime[s.ptr-s.barrierLeft]
-
-	s.currentSubChunk = oriLayers
-	s.currentNBT = oriNBTs
-	s.ptr++
-
-	return subChunk, nbts, updateUnixTime, isLastElement, nil
+	return
 }

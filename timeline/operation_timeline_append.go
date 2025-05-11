@@ -9,6 +9,80 @@ import (
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 )
 
+// "appendBlocks" is an internal implement detail.
+func (s *SubChunkTimeline) appendBlocks(newerLayers define.Layers, transaction Transaction) error {
+	for s.barrierRight-s.barrierLeft+1 >= s.maxLimit {
+		if err := s.Pop(); err != nil {
+			return fmt.Errorf("appendBlocks: %v", err)
+		}
+	}
+
+	diff := define.LayersDiff{}
+	for i := range s.latestSubChunk {
+		diff.Layer(i)
+	}
+	for i := range newerLayers {
+		diff.Layer(i)
+	}
+
+	for index := range diff {
+		diff[index] = define.Difference(
+			s.latestSubChunk.Layer(index),
+			newerLayers.Layer(index),
+		)
+	}
+
+	err := transaction.Put(
+		define.IndexBlockDu(s.pos, s.barrierRight+1),
+		marshal.LayersDiffToBytes(diff),
+	)
+	if err != nil {
+		return fmt.Errorf("appendBlocks: %v", err)
+	}
+
+	err = transaction.Put(
+		define.Sum(s.pos, define.KeyLatestSubChunk),
+		marshal.LayersToBytes(newerLayers),
+	)
+	if err != nil {
+		return fmt.Errorf("appendBlocks: %v", err)
+	}
+
+	return nil
+}
+
+// "appendNBTs" is an internal implement detail.
+func (s *SubChunkTimeline) appendNBTs(newerNBTs []define.NBTWithIndex, transaction Transaction) error {
+	for s.barrierRight-s.barrierLeft+1 >= s.maxLimit {
+		if err := s.Pop(); err != nil {
+			return fmt.Errorf("appendNBTs: %v", err)
+		}
+	}
+
+	diff, err := define.NBTDifference(s.latestNBT, newerNBTs)
+	if err != nil {
+		return fmt.Errorf("appendNBTs: %v", err)
+	}
+
+	err = transaction.Put(
+		define.IndexNBTDu(s.pos, s.barrierRight+1),
+		marshal.MultipleDiffNBTBytes(*diff),
+	)
+	if err != nil {
+		return fmt.Errorf("appendNBTs: %v", err)
+	}
+
+	err = transaction.Put(
+		define.Sum(s.pos, []byte(define.KeyLatestNBT)...),
+		marshal.BlockNBTBytes(newerNBTs),
+	)
+	if err != nil {
+		return fmt.Errorf("appendNBTs: %v", err)
+	}
+
+	return nil
+}
+
 // Append tries append a new sub chunk with block NBT data to the timeline of current sub chunk.
 // If the size of timeline will overflow max limit, then we will firstly pop some time point from
 // the underlying timeline. Note the poped time points must be the most earliest one.
@@ -25,7 +99,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 	transaction, err := s.db.OpenTransaction()
 	if err != nil {
-		return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
+		return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
 	}
 	defer func() {
 		if !success {
@@ -37,45 +111,23 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 
 	// Blocks
 	{
-		diff := define.LayersDiff{}
-		for i := range s.latestSubChunk {
-			diff.Layer(i)
-		}
-		for i := range subChunk.Layers() {
-			diff.Layer(i)
-		}
-
-		for index := range diff {
+		for index, layer := range subChunk.Layers() {
 			newerBlockMartrix := define.BlockMatrix{}
-			layer := subChunk.Layer(uint8(index))
 
 			ptr := 0
 			for x := range uint8(16) {
 				for y := range uint8(16) {
 					for z := range uint8(16) {
-						newerBlockMartrix[ptr] = s.BlockPaletteIndex(layer.At(x, y, z))
+						newerBlockMartrix[ptr] = s.blockPalette.BlockPaletteIndex(layer.At(x, y, z))
 						ptr++
 					}
 				}
 			}
 
-			_ = newerLayers.Layer(index)
-			diff[index] = define.Difference(s.latestSubChunk.Layer(index), newerBlockMartrix)
 			newerLayers[index] = newerBlockMartrix
 		}
 
-		err := transaction.Put(
-			define.IndexBlockDu(s.pos, s.barrierRight+1),
-			marshal.LayersDiffToBytes(diff),
-		)
-		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
-		}
-
-		err = transaction.Put(
-			define.Sum(s.pos, define.KeyLatestSubChunk),
-			marshal.LayersToBytes(newerLayers),
-		)
+		err = s.appendBlocks(newerLayers, transaction)
 		if err != nil {
 			return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
 		}
@@ -107,23 +159,7 @@ func (s *SubChunkTimeline) Append(subChunk *chunk.SubChunk, nbt []map[string]any
 			newerNBTs = append(newerNBTs, nbtWithIndex)
 		}
 
-		diff, err := define.NBTDifference(s.latestNBT, newerNBTs)
-		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
-		}
-
-		err = transaction.Put(
-			define.IndexNBTDu(s.pos, s.barrierRight+1),
-			marshal.MultipleDiffNBTBytes(*diff),
-		)
-		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
-		}
-
-		err = transaction.Put(
-			define.Sum(s.pos, []byte(define.KeyLatestNBT)...),
-			marshal.BlockNBTBytes(newerNBTs),
-		)
+		err = s.appendNBTs(newerNBTs, transaction)
 		if err != nil {
 			return fmt.Errorf("(s *SubChunkTimeline) Append: %v", err)
 		}
