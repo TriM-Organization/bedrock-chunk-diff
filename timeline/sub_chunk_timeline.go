@@ -195,17 +195,17 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 	return result, nil
 }
 
-// DeleteSubChunkTimeLine delete the timeline of sub chunk who at pos.
+// DeleteSubChunkTimeline delete the timeline of sub chunk who at pos.
 // If timeline is not exist, then do no operation.
 //
 // Time complexity: O(n).
 // n is the time point that this sub chunk have.
-func (t *TimelineDB) DeleteSubChunkTimeLine(pos define.DimSubChunk) error {
+func (t *TimelineDB) DeleteSubChunkTimeline(pos define.DimSubChunk) error {
 	var success bool
 
 	timeline, err := t.NewSubChunkTimeline(pos)
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
 	defer func() {
 		timeline.releaseFunc()
@@ -217,7 +217,7 @@ func (t *TimelineDB) DeleteSubChunkTimeLine(pos define.DimSubChunk) error {
 
 	transaction, err := t.db.OpenTransaction()
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
 	defer func() {
 		if !success {
@@ -230,48 +230,48 @@ func (t *TimelineDB) DeleteSubChunkTimeLine(pos define.DimSubChunk) error {
 	// Exist states
 	err = transaction.Delete(define.Sum(pos, define.KeySubChunkExistStates))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
 
 	// Timeline Unix Time
 	err = transaction.Delete(define.Sum(pos, define.KeyTimelineUnixTime))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
 
 	// Block Palette
 	err = transaction.Delete(define.Sum(pos, []byte(define.KeyBlockPalette)...))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
 
 	// Barrier and Max limit
 	err = transaction.Delete(define.Sum(pos, []byte(define.KeyBarrierAndLimit)...))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
 
 	// Latest Sub Chunk
 	err = transaction.Delete(define.Sum(pos, define.KeyLatestSubChunk))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
 
 	// Latest NBT
 	err = transaction.Delete(define.Sum(pos, []byte(define.KeyLatestNBT)...))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
 
 	// Each delta update
 	for i := timeline.barrierLeft; i <= timeline.barrierRight; i++ {
 		err = transaction.Delete(define.IndexBlockDu(pos, i))
 		if err != nil {
-			return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+			return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 		}
 		err = transaction.Delete(define.IndexNBTDu(pos, i))
 		if err != nil {
-			return fmt.Errorf("DeleteSubChunkTimeLine: %v", err)
+			return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 		}
 	}
 

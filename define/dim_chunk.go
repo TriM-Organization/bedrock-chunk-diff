@@ -13,6 +13,12 @@ type DimSubChunk struct {
 	SubChunkIndex uint8
 }
 
+// DimChunk ..
+type DimChunk struct {
+	Dimension define.Dimension
+	ChunkPos  define.ChunkPos
+}
+
 // IndexBlockDu returns a bytes holding the written index of the sub chunk position passed,
 // but specially for blocks delta update used key to index.
 func IndexBlockDu(pos DimSubChunk, timeID uint) []byte {
