@@ -82,14 +82,14 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 	}()
 
 	result = &SubChunkTimeline{
-		db:           t.db,
+		db:           t.LevelDB,
 		pos:          pos,
 		releaseFunc:  releaseFunc,
 		blockPalette: define.NewBlockPalette(),
 		maxLimit:     DefaultMaxLimit,
 	}
 
-	payload, err := t.db.Get(
+	payload, err := t.Get(
 		define.Sum(pos, define.KeySubChunkExistStates),
 	)
 	if err != nil {
@@ -103,7 +103,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Timeline Unix Time
 	{
-		payload, err := t.db.Get(
+		payload, err := t.Get(
 			define.Sum(pos, define.KeyTimelineUnixTime),
 		)
 		if err != nil {
@@ -117,7 +117,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Block Palette
 	{
-		blockPaletteBytes, err := t.db.Get(
+		blockPaletteBytes, err := t.Get(
 			define.Sum(pos, []byte(define.KeyBlockPalette)...),
 		)
 		if err != nil {
@@ -142,7 +142,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Barrier and Max limit
 	{
-		payload, err := t.db.Get(
+		payload, err := t.Get(
 			define.Sum(pos, []byte(define.KeyBarrierAndLimit)...),
 		)
 		if err != nil {
@@ -159,7 +159,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Latest Sub Chunk
 	{
-		latestSubChunkBytes, err := t.db.Get(
+		latestSubChunkBytes, err := t.Get(
 			define.Sum(pos, define.KeyLatestSubChunk),
 		)
 		if err != nil {
@@ -176,7 +176,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Latest NBT
 	{
-		latestNBTBytes, err := t.db.Get(
+		latestNBTBytes, err := t.Get(
 			define.Sum(pos, []byte(define.KeyLatestNBT)...),
 		)
 		if err != nil {
@@ -215,7 +215,7 @@ func (t *TimelineDB) DeleteSubChunkTimeline(pos define.DimSubChunk) error {
 		return nil
 	}
 
-	transaction, err := t.db.OpenTransaction()
+	transaction, err := t.OpenTransaction()
 	if err != nil {
 		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}
