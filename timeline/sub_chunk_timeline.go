@@ -71,6 +71,8 @@ type SubChunkTimeline struct {
 //     get blocking when a thread calling NewSubChunkTimeline but there is still some
 //     threads are using target sub chunk.
 //
+//   - Calling SubChunkTimeline.Save to release the timeline.
+//
 //   - Returned SubChunkTimeline can't shared with multiple threads, and it's your responsibility
 //     to ensure this thing.
 func (t *TimelineDB) NewSubChunkTimeline(

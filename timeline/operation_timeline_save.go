@@ -12,13 +12,29 @@ import (
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 )
 
-// Save saves current timeline into the underlying database.
+// Save saves current timeline into the underlying database,
+// and also release current timeline.
+//
+// That means, if you calling Save and get a nil error,
+// then this timeline is released and can't be used again.
+//
+// But, if Save returned non-nil error, then this object
+// will not released.
+//
+// Note that we will not check whether it has been released,
+// nor will we check whether you have called Save multiple times.
+//
+// Additionally, if current timeline is marked as empty,
+// then calling Save will only release this object and don't do
+// further operation. Note that you could use s.Empty() to check.
+//
 // Save must calling at the last modification of the timeline;
 // otherwise, the timeline will not be able to maintain data consistency.
 func (s *SubChunkTimeline) Save() error {
 	var success bool
 
 	if s.isEmpty {
+		s.releaseFunc()
 		return nil
 	}
 
