@@ -117,9 +117,13 @@ func (s *ChunkTimeline) Save() error {
 
 	// Save global data
 	{
+		gzipBytes, err := utils.Gzip(globalData.Bytes())
+		if err != nil {
+			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
+		}
 		err = transaction.Put(
 			define.Sum(s.pos, []byte(define.KeyChunkGlobalData)...),
-			globalData.Bytes(),
+			gzipBytes,
 		)
 		if err != nil {
 			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)

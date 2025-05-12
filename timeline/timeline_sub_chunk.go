@@ -7,6 +7,7 @@ import (
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
 	"github.com/TriM-Organization/bedrock-chunk-diff/marshal"
+	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
@@ -89,13 +90,17 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk) (result *ChunkTimelin
 		maxLimit:     DefaultMaxLimit,
 	}
 
-	globalData := t.Get(
+	gzippedGlobalData := t.Get(
 		define.Sum(pos, []byte(define.KeyChunkGlobalData)...),
 	)
-	if len(globalData) == 0 {
+	if len(gzippedGlobalData) == 0 {
 		result.isEmpty = true
 		success = true
 		return result, nil
+	}
+	globalData, err := utils.Ungzip(gzippedGlobalData)
+	if err != nil {
+		return nil, fmt.Errorf("NewChunkTimeline: %v", err)
 	}
 
 	// Timeline Unix Time
