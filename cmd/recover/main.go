@@ -88,10 +88,18 @@ func main() {
 
 				var c *chunk.Chunk
 				var nbts []map[string]any
-				for range index {
-					c, nbts, _, _, err = tl.Next()
+
+				if index >= tl.AllTimePointLen() {
+					c, nbts, _, err = tl.Last()
 					if err != nil {
 						return
+					}
+				} else {
+					for range index {
+						c, nbts, _, _, err = tl.Next()
+						if err != nil {
+							return
+						}
 					}
 				}
 

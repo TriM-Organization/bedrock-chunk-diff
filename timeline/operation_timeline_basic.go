@@ -22,6 +22,11 @@ func (s *ChunkTimeline) AllTimePoint() []int64 {
 	return s.timelineUnixTime
 }
 
+// AllTimePointLen returns the length of the time point that this timeline have.
+func (s *ChunkTimeline) AllTimePointLen() int {
+	return len(s.timelineUnixTime)
+}
+
 // SetMaxLimit sets the timeline could record how many time point.
 // maxLimit must bigger than 0. If less, then set the limit to 1.
 //
