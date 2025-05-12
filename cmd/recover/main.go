@@ -46,6 +46,11 @@ func main() {
 	}
 	defer w.CloseWorld()
 
+	startUnixTime := time.Now().Unix()
+	defer func() {
+		fmt.Println("Time used:", time.Now().Unix()-startUnixTime, "seconds")
+	}()
+
 	err = db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(timeline.DatabaseChunkIndexKey)
 		waiter := new(sync.WaitGroup)
