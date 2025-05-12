@@ -90,13 +90,26 @@ func (s *ChunkTimeline) appendNBTs(newerNBTs []define.NBTWithIndex, transaction 
 	return nil
 }
 
-// Append tries append a new chunk with block NBT data to the timeline of current chunk.
-// If the size of timeline will overflow max limit, then we will firstly pop some time point
-// from the underlying timeline. Note the poped time points must be the most earliest one.
+// Append tries append a new chunk with block
+// NBT data to the timeline of current chunk.
+//
+// If the size of timeline will overflow max
+// limit, then we will firstly pop some time
+// point from the underlying timeline.
+//
+// Note the poped time points must be the most
+// earliest one.
+//
+// If current timeline is read only, then calling
+// Append will do no operation.
 func (s *ChunkTimeline) Append(Chunk *chunk.Chunk, nbt []map[string]any) error {
 	var success bool
 	var newerChunk define.ChunkMatrix
 	var newerNBTs []define.NBTWithIndex
+
+	if s.isReadOnly {
+		return nil
+	}
 
 	for s.barrierRight-s.barrierLeft+1 >= s.maxLimit {
 		if err := s.Pop(); err != nil {

@@ -12,16 +12,17 @@ import (
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 )
 
-// SaveNOP releases current chunk timeline, and don't
-// do more things (will not change ths database).
-func (s *ChunkTimeline) SaveNOP() {
-	s.releaseFunc()
-}
-
 // Save saves current timeline into the underlying database,
 // and also release current timeline.
 //
-// That means, if you calling Save and get a nil error,
+// Read only timeline should also calling Save to release the
+// resource. But read only timeline calling this function will
+// only release but don't do further operation.
+// Additionally, empty non read only timeline is also follow the
+// same behavior.
+// Note that you could use s.Empty() and s.ReadOnly() to check.
+//
+// If you calling Save and get a nil error,
 // then this timeline is released and can't be used again.
 // Also, you can't call Save multiple times.
 //
@@ -31,16 +32,12 @@ func (s *ChunkTimeline) SaveNOP() {
 // Note that we will not check whether it has been released,
 // nor will we check whether you have called Save multiple times.
 //
-// Additionally, if current timeline is marked as empty,
-// then calling Save will only release this object and don't do
-// further operation. Note that you could use s.Empty() to check.
-//
 // Save must calling at the last modification of the timeline;
 // otherwise, the timeline will not be able to maintain data consistency.
 func (s *ChunkTimeline) Save() error {
 	var success bool
 
-	if s.isEmpty {
+	if s.isEmpty || s.isReadOnly {
 		s.releaseFunc()
 		return nil
 	}

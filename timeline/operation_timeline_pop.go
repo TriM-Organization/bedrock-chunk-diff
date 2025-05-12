@@ -8,14 +8,14 @@ import (
 )
 
 // Pop tries to delete the first time point from this timeline.
-// If current timeline is empty of there is only one time point,
-// then we will do no operation.
+// If current timeline is empty, or it is read only, or there is
+// only one time point, then we will do no operation.
 func (s *ChunkTimeline) Pop() error {
 	var success bool
 	var blockDst define.ChunkMatrix
 	var nbtDst []define.NBTWithIndex
 
-	if s.isEmpty || s.barrierLeft == s.barrierRight {
+	if s.isEmpty || s.isReadOnly || s.barrierLeft == s.barrierRight {
 		return nil
 	}
 

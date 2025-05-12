@@ -31,7 +31,9 @@ type ChunkTimeline struct {
 	db          DB
 	pos         define.DimChunk
 	releaseFunc func()
-	isEmpty     bool
+
+	isReadOnly bool
+	isEmpty    bool
 
 	timelineUnixTime []int64
 	blockPalette     *define.BlockPalette
@@ -68,7 +70,7 @@ type ChunkTimeline struct {
 //
 //   - Returned ChunkTimeline can't shared with multiple threads, and it's your responsibility
 //     to ensure this thing.
-func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk) (result *ChunkTimeline, err error) {
+func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (result *ChunkTimeline, err error) {
 	var success bool
 
 	releaseFunc, succ := t.sessions.Require(pos)
@@ -85,6 +87,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk) (result *ChunkTimelin
 	result = &ChunkTimeline{
 		db:           t.DB,
 		pos:          pos,
+		isReadOnly:   readOnly,
 		releaseFunc:  releaseFunc,
 		blockPalette: define.NewBlockPalette(),
 		maxLimit:     DefaultMaxLimit,
@@ -188,7 +191,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk) (result *ChunkTimelin
 func (t *TimelineDB) DeleteChunkTimeline(pos define.DimChunk) error {
 	var success bool
 
-	timeline, err := t.NewChunkTimeline(pos)
+	timeline, err := t.NewChunkTimeline(pos, false)
 	if err != nil {
 		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}

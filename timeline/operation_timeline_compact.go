@@ -9,6 +9,8 @@ import (
 // Compact compacts the underlying block palette as much as possible, try to delete all
 // unused blocks from it.
 //
+// If current timeline is empty or read only, then calling Compact will do no operation.
+//
 // Compact is very expensive due to its time complexity is O(C×k×4096×N×L).
 //
 //   - k is the count of sub chunks that this chunk have.
@@ -20,7 +22,7 @@ func (s *ChunkTimeline) Compact() error {
 	var err error
 	var success bool
 
-	if s.isEmpty {
+	if s.isEmpty || s.isReadOnly {
 		return nil
 	}
 

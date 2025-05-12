@@ -29,7 +29,7 @@ type DB interface {
 type Timeline interface {
 	DeleteChunkTimeline(pos define.DimChunk) error
 	LoadLatestTimePointUnixTime(pos define.DimChunk) (timeStamp int64)
-	NewChunkTimeline(pos define.DimChunk) (result *ChunkTimeline, err error)
+	NewChunkTimeline(pos define.DimChunk, readOnly bool) (result *ChunkTimeline, err error)
 	SaveLatestTimePointUnixTime(pos define.DimChunk, timeStamp int64) error
 }
 
