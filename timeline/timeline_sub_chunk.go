@@ -93,10 +93,10 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 		maxLimit:     DefaultMaxLimit,
 	}
 
-	payload := t.Get(
-		define.Sum(pos, define.KeySubChunkExistStates),
+	globalData := t.Get(
+		define.Sum(pos, []byte(define.KeySubChunkGlobalData)...),
 	)
-	if len(payload) == 0 {
+	if len(globalData) == 0 {
 		result.isEmpty = true
 		success = true
 		return result, nil
@@ -104,21 +104,20 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 	// Timeline Unix Time
 	{
-		payload := t.Get(
-			define.Sum(pos, define.KeyTimelineUnixTime),
-		)
+		length := binary.LittleEndian.Uint32(globalData)
+		payload := globalData[4 : 4+length]
 		for len(payload) > 0 {
 			result.timelineUnixTime = append(result.timelineUnixTime, int64(binary.LittleEndian.Uint64(payload)))
 			payload = payload[8:]
 		}
+		globalData = globalData[4+length:]
 	}
 
 	// Block Palette
 	{
-		blockPaletteBytes := t.Get(
-			define.Sum(pos, []byte(define.KeyBlockPalette)...),
-		)
-		buf := bytes.NewBuffer(blockPaletteBytes)
+		length := binary.LittleEndian.Uint32(globalData)
+		payload := globalData[4 : 4+length]
+		buf := bytes.NewBuffer(payload)
 
 		for buf.Len() > 0 {
 			var m map[string]any
@@ -133,20 +132,19 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 			result.blockPalette.AddBlock(blockRuntimeID)
 		}
+
+		globalData = globalData[4+length:]
 	}
 
 	// Barrier and Max limit
 	{
-		payload := t.Get(
-			define.Sum(pos, []byte(define.KeyBarrierAndLimit)...),
-		)
-		if len(payload) < 12 {
-			return nil, fmt.Errorf("NewSubChunkTimeline: Barrier and limit is broken (only get %d bytes but expected 12)", len(payload))
+		if len(globalData) < 12 {
+			return nil, fmt.Errorf("NewSubChunkTimeline: Barrier and limit is broken (only get %d bytes but expected 12)", len(globalData))
 		}
-		result.barrierLeft = uint(binary.LittleEndian.Uint32(payload))
+		result.barrierLeft = uint(binary.LittleEndian.Uint32(globalData))
 		result.ptr = result.barrierLeft
-		result.barrierRight = uint(binary.LittleEndian.Uint32(payload[4:]))
-		result.maxLimit = uint(binary.LittleEndian.Uint32(payload[8:]))
+		result.barrierRight = uint(binary.LittleEndian.Uint32(globalData[4:]))
+		result.maxLimit = uint(binary.LittleEndian.Uint32(globalData[8:]))
 	}
 
 	// Latest Sub Chunk
@@ -214,25 +212,7 @@ func (t *TimelineDB) DeleteSubChunkTimeline(pos define.DimSubChunk) error {
 	}()
 
 	// Exist states
-	err = transaction.Delete(define.Sum(pos, define.KeySubChunkExistStates))
-	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
-	}
-
-	// Timeline Unix Time
-	err = transaction.Delete(define.Sum(pos, define.KeyTimelineUnixTime))
-	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
-	}
-
-	// Block Palette
-	err = transaction.Delete(define.Sum(pos, []byte(define.KeyBlockPalette)...))
-	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
-	}
-
-	// Barrier and Max limit
-	err = transaction.Delete(define.Sum(pos, []byte(define.KeyBarrierAndLimit)...))
+	err = transaction.Delete(define.Sum(pos, []byte(define.KeySubChunkGlobalData)...))
 	if err != nil {
 		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
 	}

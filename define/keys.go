@@ -7,18 +7,14 @@ import (
 // Keys on a per-sub-chunk basis.
 // These are prefixed by only the chunk coordinates and subchunk ID.
 const (
-	KeySubChunkExistStates     = '?'
-	KeyTimelineUnixTime        = 't'
-	KeyLatestTimePointUnixTime = 'T'
+	KeySubChunkGlobalData = "tbplrg"
 
 	KeyBlockDeltaUpdate = "du"
 	KeyNBTDeltaUpdate   = "du'"
 
-	KeyBlockPalette    = "bp"
-	KeyBarrierAndLimit = "lrg"
-
-	KeyLatestSubChunk = 'm'
-	KeyLatestNBT      = "m'"
+	KeyLatestTimePointUnixTime = 'T'
+	KeyLatestSubChunk          = 'm'
+	KeyLatestNBT               = "m'"
 )
 
 // Index returns a bytes holding the written index of the sub chunk position passed.
