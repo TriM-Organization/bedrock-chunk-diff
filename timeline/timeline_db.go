@@ -24,7 +24,6 @@ func Open(path string) (result TimelineDatabase, err error) {
 
 	db, err := bbolt.Open(path, 0600, &bbolt.Options{
 		FreelistType: bbolt.FreelistMapType,
-		NoSync:       true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Open: %v", err)
