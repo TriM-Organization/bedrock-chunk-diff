@@ -29,6 +29,30 @@ func NewBlockNBT(relativePos [3]uint16, nbt map[string]any) *NBTWithIndex {
 	return n
 }
 
+// NBTDeepCopy return the deep copy of src.
+func NBTDeepCopy(src []NBTWithIndex) (result []NBTWithIndex, err error) {
+	for _, value := range src {
+		var m map[string]any
+		buf := bytes.NewBuffer(nil)
+
+		err := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(value.NBT)
+		if err != nil {
+			return nil, fmt.Errorf("NBTRestore: %v", err)
+		}
+
+		err = nbt.NewDecoderWithEncoding(bytes.NewBuffer(buf.Bytes()), nbt.LittleEndian).Decode(&m)
+		if err != nil {
+			return nil, fmt.Errorf("NBTRestore: %v", err)
+		}
+
+		result = append(result, NBTWithIndex{
+			Index: value.Index,
+			NBT:   m,
+		})
+	}
+	return
+}
+
 // DiffNBTWithIndex represents the difference between the same NBT block but on different time.
 // Index is an integer that range from 0 to 4095, and could be decode as a block relative position
 // to the chunk.
@@ -200,25 +224,9 @@ func NBTDifference(older []NBTWithIndex, newer []NBTWithIndex) (result *Multiple
 // Note that C is not very small and is little big due to we use bsdiff and xxhash for each modified NBT block.
 func NBTRestore(old []NBTWithIndex, diff MultipleDiffNBT) (result []NBTWithIndex, err error) {
 	// Deep copy
-	oldCopy := make([]NBTWithIndex, 0)
-	for _, value := range old {
-		var m map[string]any
-		buf := bytes.NewBuffer(nil)
-
-		err = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(value.NBT)
-		if err != nil {
-			return nil, fmt.Errorf("NBTRestore: %v", err)
-		}
-
-		err = nbt.NewDecoderWithEncoding(bytes.NewBuffer(buf.Bytes()), nbt.LittleEndian).Decode(&m)
-		if err != nil {
-			return nil, fmt.Errorf("NBTRestore: %v", err)
-		}
-
-		oldCopy = append(oldCopy, NBTWithIndex{
-			Index: value.Index,
-			NBT:   m,
-		})
+	oldCopy, err := NBTDeepCopy(old)
+	if err != nil {
+		return nil, fmt.Errorf("NBTRestore: %v", err)
 	}
 
 	// Added

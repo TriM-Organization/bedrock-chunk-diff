@@ -123,6 +123,7 @@ func (s *ChunkTimeline) Last() (
 	c *chunk.Chunk,
 	nbts []map[string]any,
 	updateUnixTime int64,
+	err error,
 ) {
 	var oriChunk define.ChunkMatrix = s.latestChunk
 	var oriNBTs []define.NBTWithIndex = s.latestNBT
@@ -147,10 +148,13 @@ func (s *ChunkTimeline) Last() (
 	}
 
 	// NBTs
-	nbts = make([]map[string]any, 0)
-	for _, value := range oriNBTs {
+	oriNBTsCopyOne, err := define.NBTDeepCopy(oriNBTs)
+	if err != nil {
+		return nil, nil, 0, fmt.Errorf("Last: %v", err)
+	}
+	for _, value := range oriNBTsCopyOne {
 		nbts = append(nbts, value.NBT)
 	}
 
-	return c, nbts, s.timelineUnixTime[len(s.timelineUnixTime)-1]
+	return c, nbts, s.timelineUnixTime[len(s.timelineUnixTime)-1], nil
 }
