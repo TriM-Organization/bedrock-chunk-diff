@@ -37,12 +37,12 @@ func NBTDeepCopy(src []NBTWithIndex) (result []NBTWithIndex, err error) {
 
 		err := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(value.NBT)
 		if err != nil {
-			return nil, fmt.Errorf("NBTRestore: %v", err)
+			return nil, fmt.Errorf("NBTDeepCopy: %v", err)
 		}
 
 		err = nbt.NewDecoderWithEncoding(bytes.NewBuffer(buf.Bytes()), nbt.LittleEndian).Decode(&m)
 		if err != nil {
-			return nil, fmt.Errorf("NBTRestore: %v", err)
+			return nil, fmt.Errorf("NBTDeepCopy: %v", err)
 		}
 
 		result = append(result, NBTWithIndex{
