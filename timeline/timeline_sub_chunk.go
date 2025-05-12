@@ -211,7 +211,7 @@ func (t *TimelineDB) DeleteSubChunkTimeline(pos define.DimSubChunk) error {
 		_ = transaction.Commit()
 	}()
 
-	// Exist states
+	// Global data
 	err = transaction.Delete(define.Sum(pos, []byte(define.KeySubChunkGlobalData)...))
 	if err != nil {
 		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
