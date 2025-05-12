@@ -91,10 +91,15 @@ func (s *ChunkTimeline) Next() (
 
 	// Blocks
 	c = chunk.NewChunk(block.AirRuntimeID, s.pos.Dimension.Range())
+	sub := c.Sub()
 	for ChunkIndex, layers := range oriChunk {
-		sub := c.SubChunk(int16(ChunkIndex))
+		sub := sub[ChunkIndex]
 		for index, value := range layers {
 			layer := sub.Layer(uint8(index))
+
+			if define.MatrixIsEmpty(value) {
+				continue
+			}
 
 			ptr := 0
 			for x := range uint8(16) {
@@ -130,10 +135,15 @@ func (s *ChunkTimeline) Last() (
 
 	// Blocks
 	c = chunk.NewChunk(block.AirRuntimeID, s.pos.Dimension.Range())
+	sub := c.Sub()
 	for ChunkIndex, layers := range oriChunk {
-		sub := c.SubChunk(int16(ChunkIndex))
+		sub := sub[ChunkIndex]
 		for index, value := range layers {
 			layer := sub.Layer(uint8(index))
+
+			if define.MatrixIsEmpty(value) {
+				continue
+			}
 
 			ptr := 0
 			for x := range uint8(16) {

@@ -1,6 +1,9 @@
 package timeline
 
-import "github.com/TriM-Organization/bedrock-chunk-diff/define"
+import (
+	"github.com/TriM-Organization/bedrock-chunk-diff/define"
+	"go.etcd.io/bbolt"
+)
 
 // DatabaseOperation represents some basic
 // operation that a database should be implement.
@@ -38,5 +41,6 @@ type Timeline interface {
 type TimelineDatabase interface {
 	DB
 	Timeline
+	UnderlyingDatabase() *bbolt.DB
 	CloseTimelineDB() error
 }

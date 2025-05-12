@@ -10,6 +10,7 @@ import (
 	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
 	"github.com/TriM-Organization/bedrock-world-operator/block"
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
+	"go.etcd.io/bbolt"
 )
 
 // Save saves current timeline into the underlying database,
@@ -52,6 +53,12 @@ func (s *ChunkTimeline) Save() error {
 			return
 		}
 		_ = transaction.Commit()
+		_ = s.db.(*database).bdb.Update(func(tx *bbolt.Tx) error {
+			return tx.Bucket(DatabaseChunkIndexKey).Put(
+				define.Index(s.pos),
+				[]byte{1},
+			)
+		})
 		s.releaseFunc()
 	}()
 

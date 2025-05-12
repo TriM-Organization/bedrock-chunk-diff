@@ -2,6 +2,8 @@ package define
 
 import (
 	"encoding/binary"
+
+	"github.com/TriM-Organization/bedrock-world-operator/define"
 )
 
 // Keys on a per-chunk basis.
@@ -32,6 +34,17 @@ func Index(pos DimChunk) []byte {
 	binary.LittleEndian.PutUint16(b[8:], dim)
 
 	return b
+}
+
+// IndexInv reads a key that perfix its pos and return the pos.
+func IndexInv(in []byte) (pos DimChunk) {
+	x := binary.LittleEndian.Uint32(in)
+	z := binary.LittleEndian.Uint32(in[4:])
+	dim := binary.LittleEndian.Uint16(in[8:])
+	return DimChunk{
+		Dimension: define.Dimension(dim),
+		ChunkPos:  define.ChunkPos{int32(x), int32(z)},
+	}
 }
 
 // Sum converts Index(pos) to its []byte representation and appends p.

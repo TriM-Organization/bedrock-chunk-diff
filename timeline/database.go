@@ -4,8 +4,6 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-var DatabaseRootKey = []byte("root")
-
 // database wrapper a database,
 // and expose some useful functions.
 type database struct {

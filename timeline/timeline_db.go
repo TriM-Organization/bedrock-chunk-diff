@@ -7,6 +7,11 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+var (
+	DatabaseRootKey       = []byte("root")
+	DatabaseChunkIndexKey = []byte("cik")
+)
+
 // TimelineDB implements chunk timeline and
 // history record provider based on LevelDB.
 type TimelineDB struct {
@@ -49,8 +54,13 @@ func Open(path string, noGrowSync bool, noSync bool) (result TimelineDatabase, e
 	}
 
 	err = db.Update(func(tx *bbolt.Tx) error {
-		_, err = tx.CreateBucketIfNotExists(DatabaseRootKey)
-		return err
+		if _, err = tx.CreateBucketIfNotExists(DatabaseRootKey); err != nil {
+			return err
+		}
+		if _, err = tx.CreateBucketIfNotExists(DatabaseChunkIndexKey); err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		_ = db.Close()
@@ -83,4 +93,10 @@ func (t *TimelineDB) CloseTimelineDB() error {
 		return fmt.Errorf("CloseTimelineDB: %v", err)
 	}
 	return nil
+}
+
+// UnderlyingDatabase returns the underlying database of this timeline database.
+// Only should be calling when need iter all timelines for all chunks.
+func (t *TimelineDB) UnderlyingDatabase() *bbolt.DB {
+	return t.DB.(*database).bdb
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"go.etcd.io/bbolt"
 )
 
 const DefaultMaxLimit = 7
@@ -71,6 +72,7 @@ type ChunkTimeline struct {
 //   - Returned ChunkTimeline can't shared with multiple threads, and it's your responsibility
 //     to ensure this thing.
 func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (result *ChunkTimeline, err error) {
+	var exist bool
 	var success bool
 
 	releaseFunc, succ := t.sessions.Require(pos)
@@ -95,14 +97,22 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 		latestChunk:  make(define.ChunkMatrix, pos.Dimension.Height()>>4),
 	}
 
-	gzippedGlobalData := t.Get(
-		define.Sum(pos, []byte(define.KeyChunkGlobalData)...),
-	)
-	if len(gzippedGlobalData) == 0 {
+	err = t.DB.(*database).bdb.View(func(tx *bbolt.Tx) error {
+		exist = (tx.Bucket(DatabaseChunkIndexKey).Get(define.Index(pos)) != nil)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("NewChunkTimeline: %v", err)
+	}
+	if !exist {
 		result.isEmpty = true
 		success = true
 		return result, nil
 	}
+
+	gzippedGlobalData := t.Get(
+		define.Sum(pos, []byte(define.KeyChunkGlobalData)...),
+	)
 	globalData, err := utils.Ungzip(gzippedGlobalData)
 	if err != nil {
 		return nil, fmt.Errorf("NewChunkTimeline: %v", err)
@@ -219,6 +229,14 @@ func (t *TimelineDB) DeleteChunkTimeline(pos define.DimChunk) error {
 
 	// Global data
 	err = transaction.Delete(define.Sum(pos, []byte(define.KeyChunkGlobalData)...))
+	if err != nil {
+		return fmt.Errorf("DeleteChunkTimeline: %v", err)
+	}
+
+	// Chunk Index
+	err = t.DB.(*database).bdb.Update(func(tx *bbolt.Tx) error {
+		return tx.Bucket(DatabaseChunkIndexKey).Delete(define.Index(pos))
+	})
 	if err != nil {
 		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}

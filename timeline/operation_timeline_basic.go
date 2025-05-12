@@ -15,6 +15,13 @@ func (s *ChunkTimeline) ReadOnly() bool {
 	return s.isReadOnly
 }
 
+// AllTimePoint returns a slice that holds the unix time of all time points
+// this timeline have. Granted the returned array is non-decreasing.
+// Note that it's unsafe to modify the returned slice.
+func (s *ChunkTimeline) AllTimePoint() []int64 {
+	return s.timelineUnixTime
+}
+
 // SetMaxLimit sets the timeline could record how many time point.
 // maxLimit must bigger than 0. If less, then set the limit to 1.
 //

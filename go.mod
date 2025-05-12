@@ -7,7 +7,13 @@ require (
 	github.com/sandertv/gophertunnel v1.45.1
 )
 
-require golang.org/x/sys v0.29.0 // indirect
+require (
+	github.com/df-mc/goleveldb v1.1.9 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
+	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+)
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
