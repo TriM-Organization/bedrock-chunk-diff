@@ -149,7 +149,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk) (result *ChunkTimelin
 			define.Sum(pos, define.KeyLatestChunk),
 		)
 
-		chunkMatrix, err := marshal.BytesToChunkMatrix(latestChunkBytes)
+		chunkMatrix, err := marshal.BytesToChunkMatrix(latestChunkBytes, pos.Dimension.Range())
 		if err != nil {
 			return nil, fmt.Errorf("NewChunkTimeline: %v", err)
 		}

@@ -32,7 +32,10 @@ func (s *ChunkTimeline) Compact() error {
 
 	originPtr := s.ptr
 	length := s.barrierRight - s.barrierLeft + 1
-	allTimePoint := make([]define.ChunkMatrix, 0)
+	allTimePoint := make([]define.ChunkMatrix, length)
+	for index := range allTimePoint {
+		allTimePoint[index] = make(define.ChunkMatrix, s.pos.Dimension.Height()>>4)
+	}
 
 	for {
 		index := s.ptr - s.barrierLeft
@@ -50,6 +53,9 @@ func (s *ChunkTimeline) Compact() error {
 
 	newBlockPalette := define.NewBlockPalette()
 	newAllTimePoint := make([]define.ChunkMatrix, length)
+	for index := range newAllTimePoint {
+		newAllTimePoint[index] = make(define.ChunkMatrix, s.pos.Dimension.Height()>>4)
+	}
 
 	for _, timePoint := range allTimePoint {
 		for _, Chunk := range timePoint {
@@ -62,10 +68,11 @@ func (s *ChunkTimeline) Compact() error {
 	}
 
 	for whichTimePoint, timePoint := range allTimePoint {
-		for _, Chunk := range timePoint {
+		for whichSubChunk, Chunk := range timePoint {
 			for whichLayer, layer := range Chunk {
 				l := define.Layers{}
 				_ = l.Layer(whichLayer)
+				l[whichLayer] = define.NewMatrix[define.BlockMatrix](false)
 
 				for index, blockPaletteIndex := range layer {
 					l[whichLayer][index] = newBlockPalette.BlockPaletteIndex(
@@ -73,9 +80,7 @@ func (s *ChunkTimeline) Compact() error {
 					)
 				}
 
-				temp := newAllTimePoint[whichTimePoint]
-				temp = append(temp, l)
-				newAllTimePoint[whichTimePoint] = temp
+				newAllTimePoint[whichTimePoint][whichSubChunk] = l
 			}
 		}
 	}
@@ -106,7 +111,7 @@ func (s *ChunkTimeline) Compact() error {
 	}()
 
 	s.barrierRight = s.barrierLeft - 1
-	s.latestChunk = define.ChunkMatrix{}
+	s.latestChunk = make(define.ChunkMatrix, s.pos.Dimension.Height()>>4)
 
 	// Update each time point
 	for _, value := range newAllTimePoint {

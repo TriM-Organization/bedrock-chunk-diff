@@ -6,6 +6,7 @@ import (
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
 	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
+	operator_define "github.com/TriM-Organization/bedrock-world-operator/define"
 )
 
 // ChunkMatrixToBytes return the bytes represents of chunkMatrix.
@@ -28,7 +29,10 @@ func ChunkMatrixToBytes(chunkMatrix define.ChunkMatrix) (result []byte, err erro
 }
 
 // BytesToChunkMatrix decode ChunkMatrix from bytes.
-func BytesToChunkMatrix(in []byte) (result define.ChunkMatrix, err error) {
+// r is the count of sub chunks that this chunk have.
+func BytesToChunkMatrix(in []byte, r operator_define.Range) (result define.ChunkMatrix, err error) {
+	result = make(define.ChunkMatrix, (r.Height()>>4)+1)
+
 	if len(in) == 0 {
 		return result, nil
 	}
@@ -39,9 +43,11 @@ func BytesToChunkMatrix(in []byte) (result define.ChunkMatrix, err error) {
 		return
 	}
 
+	ptr := 0
 	buf := bytes.NewBuffer(originBytes)
 	for buf.Len() > 0 {
-		result = append(result, BytesToLayers(buf))
+		result[ptr] = BytesToLayers(buf)
+		ptr++
 	}
 
 	return result, nil
@@ -67,7 +73,10 @@ func ChunkDiffMatrixToBytes(chunkDiffMatrix define.ChunkDiffMatrix) (result []by
 }
 
 // BytesToChunkDiffMatrix decode ChunkDiffMatrix from bytes.
-func BytesToChunkDiffMatrix(in []byte) (result define.ChunkDiffMatrix, err error) {
+// r is the count of sub chunks that this chunk have.
+func BytesToChunkDiffMatrix(in []byte, r operator_define.Range) (result define.ChunkDiffMatrix, err error) {
+	result = make(define.ChunkDiffMatrix, (r.Height()>>4)+1)
+
 	if len(in) == 0 {
 		return result, nil
 	}
@@ -78,9 +87,11 @@ func BytesToChunkDiffMatrix(in []byte) (result define.ChunkDiffMatrix, err error
 		return
 	}
 
+	ptr := 0
 	buf := bytes.NewBuffer(originBytes)
 	for buf.Len() > 0 {
-		result = append(result, BytesToLayersDiff(buf))
+		result[ptr] = BytesToLayersDiff(buf)
+		ptr++
 	}
 
 	return result, nil

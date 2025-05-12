@@ -42,7 +42,7 @@ func (s *ChunkTimeline) Pop() error {
 				define.IndexBlockDu(s.pos, s.barrierLeft),
 			)
 
-			diff, err := marshal.BytesToChunkDiffMatrix(payload)
+			diff, err := marshal.BytesToChunkDiffMatrix(payload, s.pos.Dimension.Range())
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
@@ -63,7 +63,7 @@ func (s *ChunkTimeline) Pop() error {
 				break
 			}
 
-			diff, err := marshal.BytesToChunkDiffMatrix(payload)
+			diff, err := marshal.BytesToChunkDiffMatrix(payload, s.pos.Dimension.Range())
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
@@ -170,7 +170,7 @@ func (s *ChunkTimeline) Pop() error {
 
 	if s.ptr < s.barrierLeft {
 		s.ptr = s.barrierLeft
-		s.currentChunk = define.ChunkMatrix{}
+		s.currentChunk = make(define.ChunkMatrix, s.pos.Dimension.Height()>>4)
 		s.currentNBT = nil
 	}
 

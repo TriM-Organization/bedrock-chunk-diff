@@ -26,12 +26,12 @@ func (s *ChunkTimeline) next() (
 			define.IndexBlockDu(s.pos, s.ptr),
 		)
 
-		diff, err := marshal.BytesToChunkDiffMatrix(payload)
+		diff, err := marshal.BytesToChunkDiffMatrix(payload, s.pos.Dimension.Range())
 		if err != nil {
 			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
 		}
 
-		oriChunk = define.ChunkRestore(s.latestChunk, diff)
+		oriChunk = define.ChunkRestore(s.currentChunk, diff)
 	}
 
 	// NBTs
@@ -60,7 +60,7 @@ func (s *ChunkTimeline) next() (
 
 	if s.ptr > s.barrierRight {
 		s.ptr = s.barrierLeft
-		s.currentChunk = define.ChunkMatrix{}
+		s.currentChunk = make(define.ChunkMatrix, s.pos.Dimension.Height()>>4)
 		s.currentNBT = nil
 	}
 
