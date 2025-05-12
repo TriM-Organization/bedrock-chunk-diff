@@ -9,7 +9,7 @@ import (
 
 // BlockMatrixToBytes write the bytes represents of blockMatrix into a bytes buffer.
 func BlockMatrixToBytes(buf *bytes.Buffer, blockMatrix define.BlockMatrix) {
-	if blockMatrix == emptyBlockMatrix {
+	if define.MatrixIsEmpty(blockMatrix) {
 		buf.WriteByte(MatrixStateEmpty)
 		return
 	}
@@ -17,25 +17,24 @@ func BlockMatrixToBytes(buf *bytes.Buffer, blockMatrix define.BlockMatrix) {
 
 	w := protocol.NewWriter(buf, 0)
 	for i := range define.MatrixSize {
-		value := uint32(blockMatrix[i])
-		w.Varuint32(&value)
+		w.Varint32(&blockMatrix[i])
 	}
 }
 
 // BytesToBlockMatrix decode BlockMatrix from bytes buffer.
 func BytesToBlockMatrix(buf *bytes.Buffer) define.BlockMatrix {
-	var result define.BlockMatrix
-
 	b, _ := buf.ReadByte()
 	if b == MatrixStateEmpty {
-		return result
+		return define.NewMatrix[define.BlockMatrix](true)
 	}
 
 	r := protocol.NewReader(buf, 0, false)
+	result := define.NewMatrix[define.BlockMatrix](false)
+
 	for i := range define.MatrixSize {
-		var value uint32
-		r.Varuint32(&value)
-		result[i] = uint16(value)
+		var value int32
+		r.Varint32(&value)
+		result[i] = value
 	}
 
 	return result
@@ -43,7 +42,7 @@ func BytesToBlockMatrix(buf *bytes.Buffer) define.BlockMatrix {
 
 // DiffMatrixToBytes writes the bytes represents of diffMatrix into a bytes buffer.
 func DiffMatrixToBytes(buf *bytes.Buffer, diffMatrix define.DiffMatrix) {
-	if diffMatrix == emptyDiffMatrix {
+	if define.MatrixIsEmpty(diffMatrix) {
 		buf.WriteByte(MatrixStateEmpty)
 		return
 	}
@@ -51,25 +50,24 @@ func DiffMatrixToBytes(buf *bytes.Buffer, diffMatrix define.DiffMatrix) {
 
 	w := protocol.NewWriter(buf, 0)
 	for i := range define.MatrixSize {
-		value := int32(diffMatrix[i])
-		w.Varint32(&value)
+		w.Varint32(&diffMatrix[i])
 	}
 }
 
 // BytesToDiffMatrix decode DiffMatrix from bytes buffer.
 func BytesToDiffMatrix(buf *bytes.Buffer) define.DiffMatrix {
-	var result define.DiffMatrix
-
 	b, _ := buf.ReadByte()
 	if b == MatrixStateEmpty {
-		return result
+		return define.NewMatrix[define.DiffMatrix](true)
 	}
 
 	r := protocol.NewReader(buf, 0, false)
+	result := define.NewMatrix[define.DiffMatrix](false)
+
 	for i := range define.MatrixSize {
 		var value int32
 		r.Varint32(&value)
-		result[i] = int(value)
+		result[i] = value
 	}
 
 	return result

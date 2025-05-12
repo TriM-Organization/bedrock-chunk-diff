@@ -2,86 +2,57 @@ package marshal
 
 import (
 	"bytes"
-	"fmt"
+	"encoding/binary"
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
-	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
 )
 
-// LayersToBytes return the bytes represents of layers.
-func LayersToBytes(layers define.Layers) (result []byte, err error) {
-	buf := bytes.NewBuffer(nil)
-
+// LayersToBytes writes the bytes represents of layers into a bytes buffer.
+func LayersToBytes(buf *bytes.Buffer, layers define.Layers) {
+	lengthBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(lengthBytes, uint32(len(layers)))
+	buf.Write(lengthBytes)
 	for _, value := range layers {
 		BlockMatrixToBytes(buf, value)
 	}
-
-	if buf.Len() == 0 {
-		return nil, nil
-	}
-
-	result, err = utils.Gzip(buf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("LayersToBytes: %v", err)
-	}
-	return
 }
 
-// BytesToLayers decode Layers from bytes.
-func BytesToLayers(in []byte) (result define.Layers, err error) {
-	if len(in) == 0 {
-		return result, nil
+// BytesToLayers decode Layers from bytes buffer.
+func BytesToLayers(buf *bytes.Buffer) define.Layers {
+	lengthBytes := make([]byte, 4)
+	_, _ = buf.Read(lengthBytes)
+	length := int(binary.LittleEndian.Uint32(lengthBytes))
+
+	result := define.Layers{}
+	for i := range length {
+		result.Layer(i)
+		result[i] = BytesToBlockMatrix(buf)
 	}
 
-	originBytes, err := utils.Ungzip(in)
-	if err != nil {
-		err = fmt.Errorf("BytesToLayers: %v", err)
-		return
-	}
-
-	buf := bytes.NewBuffer(originBytes)
-	for buf.Len() > 0 {
-		result = append(result, BytesToBlockMatrix(buf))
-	}
-
-	return result, nil
+	return result
 }
 
-// LayersDiffToBytes return the bytes represents of layersDiff.
-func LayersDiffToBytes(layersDiff define.LayersDiff) (result []byte, err error) {
-	buf := bytes.NewBuffer(nil)
-
+// LayersDiffToBytes writes the bytes represents of layersDiff into a bytes buffer.
+func LayersDiffToBytes(buf *bytes.Buffer, layersDiff define.LayersDiff) {
+	lengthBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(lengthBytes, uint32(len(layersDiff)))
+	buf.Write(lengthBytes)
 	for _, value := range layersDiff {
 		DiffMatrixToBytes(buf, value)
 	}
-
-	if buf.Len() == 0 {
-		return nil, nil
-	}
-
-	result, err = utils.Gzip(buf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("LayersDiffToBytes: %v", err)
-	}
-	return
 }
 
-// BytesToLayersDiff decode LayersDiff from bytes.
-func BytesToLayersDiff(in []byte) (result define.LayersDiff, err error) {
-	if len(in) == 0 {
-		return result, nil
+// BytesToLayersDiff decode LayersDiff from bytes buffer.
+func BytesToLayersDiff(buf *bytes.Buffer) define.LayersDiff {
+	lengthBytes := make([]byte, 4)
+	_, _ = buf.Read(lengthBytes)
+	length := int(binary.LittleEndian.Uint32(lengthBytes))
+
+	result := define.LayersDiff{}
+	for i := range length {
+		result.Layer(i)
+		result[i] = BytesToDiffMatrix(buf)
 	}
 
-	originBytes, err := utils.Ungzip(in)
-	if err != nil {
-		err = fmt.Errorf("BytesToLayersDiff: %v", err)
-		return
-	}
-
-	buf := bytes.NewBuffer(originBytes)
-	for buf.Len() > 0 {
-		result = append(result, BytesToDiffMatrix(buf))
-	}
-
-	return result, nil
+	return result
 }

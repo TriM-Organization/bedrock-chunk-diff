@@ -13,11 +13,12 @@ import (
 
 const DefaultMaxLimit = 7
 
-// SubChunkTimeline records the timeline of a sub chunk,
-// and it contains the change logs about this sub chunk
+// ChunkTimeline records the timeline of a chunk,
+// and it contains the change logs about this chunk
 // on this timeline.
-// In other words, the SubChunkTimeline holds the history
-// of this sub chunk.
+//
+// In other words, the ChunkTimeline holds the history
+// of this chunk.
 //
 // Note that it's unsafe for multiple thread to access this
 // struct due to we don't use mutex to ensure the operation
@@ -25,37 +26,32 @@ const DefaultMaxLimit = 7
 //
 // So, it's your responsibility to make ensure there is only
 // one thread is using this object.
-type SubChunkTimeline struct {
+type ChunkTimeline struct {
 	db          DB
-	pos         define.DimSubChunk
+	pos         define.DimChunk
 	releaseFunc func()
 	isEmpty     bool
 
 	timelineUnixTime []int64
 	blockPalette     *define.BlockPalette
 
-	ptr             uint
-	currentSubChunk define.Layers
-	currentNBT      []define.NBTWithIndex
+	ptr          uint
+	currentChunk define.ChunkMatrix
+	currentNBT   []define.NBTWithIndex
 
 	barrierLeft  uint
 	barrierRight uint
 	maxLimit     uint
 
-	latestSubChunk define.Layers
-	latestNBT      []define.NBTWithIndex
+	latestChunk define.ChunkMatrix
+	latestNBT   []define.NBTWithIndex
 }
 
-// NewSubChunkTimeline gets the timeline of a sub chunk who is at pos.
+// NewChunkTimeline gets the timeline of a chunk who is at pos.
 //
-// Note that if timeline of current sub chunk is not exist, then we will not create a timeline
+// Note that if timeline of current chunk is not exist, then we will not create a timeline
 // but return an empty one so you can modify it. The time to create the timeline is only when you
 // save a timeline that not empty to the database.
-//
-// subChunkIndex is an integer that bigger then -1.
-// For example, if a block is at (x,23,z) and is in Overworld, then it is in a sub chunk
-// whose Y position is 23>>4 = 1. However, this is not the index of this sub chunk,
-// we need use (23>>4) - (dm.Range()[0]>>4) to get the index, which is 1-4=-3.
 //
 // Important:
 //
@@ -63,20 +59,20 @@ type SubChunkTimeline struct {
 //     at the end; otherwise, the timeline will not be able to maintain data consistency
 //     (only need to save at the last modification).
 //
-//   - Timeline of one sub chunk can't be using by multiple threads. Therefore, you will
-//     get blocking when a thread calling NewSubChunkTimeline but there is still some
-//     threads are using target sub chunk.
+//   - Timeline of one chunk can't be using by multiple threads. Therefore, you will
+//     get blocking when a thread calling NewChunkTimeline but there is still some
+//     threads are using target chunk.
 //
-//   - Calling SubChunkTimeline.Save to release the timeline.
+//   - Calling ChunkTimeline.Save to release the timeline.
 //
-//   - Returned SubChunkTimeline can't shared with multiple threads, and it's your responsibility
+//   - Returned ChunkTimeline can't shared with multiple threads, and it's your responsibility
 //     to ensure this thing.
-func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChunkTimeline, err error) {
+func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk) (result *ChunkTimeline, err error) {
 	var success bool
 
 	releaseFunc, succ := t.sessions.Require(pos)
 	if !succ {
-		return nil, fmt.Errorf("NewSubChunkTimeline: Underlying database is closed")
+		return nil, fmt.Errorf("NewChunkTimeline: Underlying database is closed")
 	}
 
 	defer func() {
@@ -85,7 +81,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 		}
 	}()
 
-	result = &SubChunkTimeline{
+	result = &ChunkTimeline{
 		db:           t.DB,
 		pos:          pos,
 		releaseFunc:  releaseFunc,
@@ -94,7 +90,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 	}
 
 	globalData := t.Get(
-		define.Sum(pos, []byte(define.KeySubChunkGlobalData)...),
+		define.Sum(pos, []byte(define.KeyChunkGlobalData)...),
 	)
 	if len(globalData) == 0 {
 		result.isEmpty = true
@@ -122,12 +118,12 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 		for buf.Len() > 0 {
 			var m map[string]any
 			if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&m); err != nil {
-				return nil, fmt.Errorf("NewSubChunkTimeline: error decoding block palette entry: %w", err)
+				return nil, fmt.Errorf("NewChunkTimeline: error decoding block palette entry: %w", err)
 			}
 
 			blockRuntimeID, err := chunk.BlockPaletteEncoding.DecodeBlockState(m)
 			if err != nil {
-				return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
+				return nil, fmt.Errorf("NewChunkTimeline: %v", err)
 			}
 
 			result.blockPalette.AddBlock(blockRuntimeID)
@@ -139,7 +135,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 	// Barrier and Max limit
 	{
 		if len(globalData) < 12 {
-			return nil, fmt.Errorf("NewSubChunkTimeline: Barrier and limit is broken (only get %d bytes but expected 12)", len(globalData))
+			return nil, fmt.Errorf("NewChunkTimeline: Barrier and limit is broken (only get %d bytes but expected 12)", len(globalData))
 		}
 		result.barrierLeft = uint(binary.LittleEndian.Uint32(globalData))
 		result.ptr = result.barrierLeft
@@ -147,18 +143,18 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 		result.maxLimit = uint(binary.LittleEndian.Uint32(globalData[8:]))
 	}
 
-	// Latest Sub Chunk
+	// Latest Chunk
 	{
-		latestSubChunkBytes := t.Get(
-			define.Sum(pos, define.KeyLatestSubChunk),
+		latestChunkBytes := t.Get(
+			define.Sum(pos, define.KeyLatestChunk),
 		)
 
-		blockMatrix, err := marshal.BytesToLayers(latestSubChunkBytes)
+		chunkMatrix, err := marshal.BytesToChunkMatrix(latestChunkBytes)
 		if err != nil {
-			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
+			return nil, fmt.Errorf("NewChunkTimeline: %v", err)
 		}
 
-		result.latestSubChunk = blockMatrix
+		result.latestChunk = chunkMatrix
 	}
 
 	// Latest NBT
@@ -169,7 +165,7 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 
 		latestNBT, err := marshal.BytesToBlockNBT(latestNBTBytes)
 		if err != nil {
-			return nil, fmt.Errorf("NewSubChunkTimeline: %v", err)
+			return nil, fmt.Errorf("NewChunkTimeline: %v", err)
 		}
 
 		result.latestNBT = latestNBT
@@ -179,17 +175,17 @@ func (t *TimelineDB) NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChu
 	return result, nil
 }
 
-// DeleteSubChunkTimeline delete the timeline of sub chunk who at pos.
+// DeleteChunkTimeline delete the timeline of chunk who at pos.
 // If timeline is not exist, then do no operation.
 //
 // Time complexity: O(n).
-// n is the time point that this sub chunk have.
-func (t *TimelineDB) DeleteSubChunkTimeline(pos define.DimSubChunk) error {
+// n is the time point that this chunk have.
+func (t *TimelineDB) DeleteChunkTimeline(pos define.DimChunk) error {
 	var success bool
 
-	timeline, err := t.NewSubChunkTimeline(pos)
+	timeline, err := t.NewChunkTimeline(pos)
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
+		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 	defer func() {
 		timeline.releaseFunc()
@@ -201,7 +197,7 @@ func (t *TimelineDB) DeleteSubChunkTimeline(pos define.DimSubChunk) error {
 
 	transaction, err := t.OpenTransaction()
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
+		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 	defer func() {
 		if !success {
@@ -212,32 +208,32 @@ func (t *TimelineDB) DeleteSubChunkTimeline(pos define.DimSubChunk) error {
 	}()
 
 	// Global data
-	err = transaction.Delete(define.Sum(pos, []byte(define.KeySubChunkGlobalData)...))
+	err = transaction.Delete(define.Sum(pos, []byte(define.KeyChunkGlobalData)...))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
+		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 
-	// Latest Sub Chunk
-	err = transaction.Delete(define.Sum(pos, define.KeyLatestSubChunk))
+	// Latest Chunk
+	err = transaction.Delete(define.Sum(pos, define.KeyLatestChunk))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
+		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 
 	// Latest NBT
 	err = transaction.Delete(define.Sum(pos, []byte(define.KeyLatestNBT)...))
 	if err != nil {
-		return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
+		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 
 	// Each delta update
 	for i := timeline.barrierLeft; i <= timeline.barrierRight; i++ {
 		err = transaction.Delete(define.IndexBlockDu(pos, i))
 		if err != nil {
-			return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
+			return fmt.Errorf("DeleteChunkTimeline: %v", err)
 		}
 		err = transaction.Delete(define.IndexNBTDu(pos, i))
 		if err != nil {
-			return fmt.Errorf("DeleteSubChunkTimeline: %v", err)
+			return fmt.Errorf("DeleteChunkTimeline: %v", err)
 		}
 	}
 

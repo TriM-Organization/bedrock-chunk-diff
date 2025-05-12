@@ -7,24 +7,54 @@ const MatrixSize = 4096
 
 type (
 	// BlockMatrix represents a block matrix at a specific point in time.
-	BlockMatrix [MatrixSize]uint16
+	BlockMatrix *[MatrixSize]int32
 	// DiffMatrix is a matrix that holds the difference of
 	// BlockMatrix between time i-1 and time i.
 	// Note that i must bigger than 0.
-	DiffMatrix [MatrixSize]int
+	DiffMatrix *[MatrixSize]int32
 )
 
-// Difference computes the difference between older and newer.
+// NewMatrix creates and returns new T.
+// If empty is true, then return nil to reduce memory used.
+// All matrix should be created from this function.
+func NewMatrix[T BlockMatrix | DiffMatrix](empty bool) T {
+	if !empty {
+		return &[MatrixSize]int32{}
+	}
+	return nil
+}
+
+// MatrixIsEmpty checks the martix T is empty or not.
+func MatrixIsEmpty[T BlockMatrix | DiffMatrix](matrix T) bool {
+	return (matrix == nil)
+}
+
+// BlockDifference computes the difference between older and newer.
 // Time complexity: O(4096).
-func Difference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
-	var result DiffMatrix
+func BlockDifference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
+	if MatrixIsEmpty(older) {
+		if MatrixIsEmpty(newer) {
+			return nil
+		}
+		return DiffMatrix(newer)
+	}
+
+	result := NewMatrix[DiffMatrix](false)
+
+	if MatrixIsEmpty(newer) {
+		for i := range MatrixSize {
+			result[i] = -older[i]
+		}
+		return result
+	}
+
 	for i := range MatrixSize {
-		result[i] = int(newer[i]) - int(older[i])
+		result[i] = newer[i] - older[i]
 	}
 	return result
 }
 
-// Restore use old and diff to compute the newer block matrix.
+// BlockRestore use old and diff to compute the newer block matrix.
 // Time complexity: O(4096).
 //
 // Note that you could do this operation for all difference array,
@@ -32,10 +62,21 @@ func Difference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
 //
 // In this case, the time complexity is O(n×4096) where n is the length of
 // these difference array.
-func Restore(old BlockMatrix, diff DiffMatrix) BlockMatrix {
-	var result BlockMatrix
+func BlockRestore(old BlockMatrix, diff DiffMatrix) BlockMatrix {
+	if MatrixIsEmpty(old) {
+		if MatrixIsEmpty(diff) {
+			return NewMatrix[BlockMatrix](true)
+		}
+		return BlockMatrix(diff)
+	}
+
+	if MatrixIsEmpty(diff) {
+		return old
+	}
+
+	result := NewMatrix[BlockMatrix](false)
 	for index, value := range diff {
-		result[index] = uint16(int(old[index]) + value)
+		result[index] = old[index] + value
 	}
 	return result
 }

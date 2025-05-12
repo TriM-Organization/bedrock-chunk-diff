@@ -6,11 +6,17 @@ import (
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
 )
 
-// Compact compacts the underlying block palette as much as possible, try to delete all unused blocks from it.
-// Compact is very expensive due to its time complexity is O(C×4096×N×L).
-// N is the count of time point that this timeline have, and L is the average count of layers in all timelines.
-// C is a little big (bigger than 2) due to there are multiple difference/prefix-sum operations need to do.
-func (s *SubChunkTimeline) Compact() error {
+// Compact compacts the underlying block palette as much as possible, try to delete all
+// unused blocks from it.
+//
+// Compact is very expensive due to its time complexity is O(C×k×4096×N×L).
+//
+//   - k is the count of sub chunks that this chunk have.
+//   - N is the count of time point that this timeline have.
+//   - L is the average count of layers for each sub chunks in this timeline.
+//   - C is a little big (bigger than 2) due to there are multiple difference/prefix-sum
+//     operations need to do.
+func (s *ChunkTimeline) Compact() error {
 	var err error
 	var success bool
 
@@ -20,13 +26,13 @@ func (s *SubChunkTimeline) Compact() error {
 
 	for s.barrierRight-s.barrierLeft+1 > s.maxLimit {
 		if err := s.Pop(); err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Compact: %v", err)
 		}
 	}
 
 	originPtr := s.ptr
 	length := s.barrierRight - s.barrierLeft + 1
-	allTimePoint := make([]define.Layers, length)
+	allTimePoint := make([]define.ChunkMatrix, 0)
 
 	for {
 		index := s.ptr - s.barrierLeft
@@ -34,7 +40,7 @@ func (s *SubChunkTimeline) Compact() error {
 		allTimePoint[index], _, _, _, err = s.next()
 		if err != nil {
 			s.ptr = originPtr
-			return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Compact: %v", err)
 		}
 
 		if s.ptr == originPtr {
@@ -43,44 +49,54 @@ func (s *SubChunkTimeline) Compact() error {
 	}
 
 	newBlockPalette := define.NewBlockPalette()
-	newAllTimePoint := make([]define.Layers, length)
+	newAllTimePoint := make([]define.ChunkMatrix, length)
 
 	for _, timePoint := range allTimePoint {
-		for _, layer := range timePoint {
-			for _, index := range layer {
-				newBlockPalette.AddBlock(s.blockPalette.BlockRuntimeID(index))
+		for _, Chunk := range timePoint {
+			for _, layer := range Chunk {
+				for _, index := range layer {
+					newBlockPalette.AddBlock(s.blockPalette.BlockRuntimeID(index))
+				}
 			}
 		}
 	}
 
 	for whichTimePoint, timePoint := range allTimePoint {
-		for whichLayer, layer := range timePoint {
-			_ = newAllTimePoint[whichTimePoint].Layer(whichLayer)
-			for index, blockPaletteIndex := range layer {
-				newAllTimePoint[whichTimePoint][whichLayer][index] = newBlockPalette.BlockPaletteIndex(
-					s.blockPalette.BlockRuntimeID(blockPaletteIndex),
-				)
+		for _, Chunk := range timePoint {
+			for whichLayer, layer := range Chunk {
+				l := define.Layers{}
+				_ = l.Layer(whichLayer)
+
+				for index, blockPaletteIndex := range layer {
+					l[whichLayer][index] = newBlockPalette.BlockPaletteIndex(
+						s.blockPalette.BlockRuntimeID(blockPaletteIndex),
+					)
+				}
+
+				temp := newAllTimePoint[whichTimePoint]
+				temp = append(temp, l)
+				newAllTimePoint[whichTimePoint] = temp
 			}
 		}
 	}
 
 	transaction, err := s.db.OpenTransaction()
 	if err != nil {
-		return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
+		return fmt.Errorf("(s *ChunkTimeline) Compact: %v", err)
 	}
 
 	originBarrierLeft := s.barrierLeft
 	originBarrierRight := s.barrierRight
-	originLatestSubChunk := s.latestSubChunk
-	originCurrentSubChunk := s.currentSubChunk
+	originLatestChunk := s.latestChunk
+	originCurrentChunk := s.currentChunk
 	originCurrentNBT := s.currentNBT
 
 	defer func() {
 		s.ptr = originPtr
 		s.barrierLeft = originBarrierLeft
 		s.barrierRight = originBarrierRight
-		s.latestSubChunk = originLatestSubChunk
-		s.currentSubChunk = originCurrentSubChunk
+		s.latestChunk = originLatestChunk
+		s.currentChunk = originCurrentChunk
 		s.currentNBT = originCurrentNBT
 		if !success {
 			_ = transaction.Discard()
@@ -90,15 +106,15 @@ func (s *SubChunkTimeline) Compact() error {
 	}()
 
 	s.barrierRight = s.barrierLeft - 1
-	s.latestSubChunk = define.Layers{}
+	s.latestChunk = define.ChunkMatrix{}
 
 	// Update each time point
 	for _, value := range newAllTimePoint {
 		err = s.appendBlocks(value, transaction)
 		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Compact: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Compact: %v", err)
 		}
-		s.latestSubChunk = value
+		s.latestChunk = value
 		s.barrierRight++
 	}
 

@@ -11,7 +11,7 @@ import (
 )
 
 // BlockNBTBytes return the bytes represents of blockNBT.
-// blockNBT must contains all NBT blocks from the same sub chunk
+// blockNBT must contains all NBT blocks from the same chunk
 // and in the same time.
 func BlockNBTBytes(blockNBT []define.NBTWithIndex) (result []byte, err error) {
 	if len(blockNBT) == 0 {
@@ -19,11 +19,9 @@ func BlockNBTBytes(blockNBT []define.NBTWithIndex) (result []byte, err error) {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	w := protocol.NewWriter(buf, 0)
 
 	for _, value := range blockNBT {
-		index := uint32(value.Index)
-		w.Varuint32(&index)
+		value.Index.Marshal(buf)
 		utils.MarshalNBT(buf, value.NBT, "")
 	}
 
@@ -36,7 +34,7 @@ func BlockNBTBytes(blockNBT []define.NBTWithIndex) (result []byte, err error) {
 
 // BytesToBlockNBT decode multiple NBTWithIndex from bytes.
 // Ensure all element in returned slice all represents the NBT blocks
-// in the same sub chunk and in the same time.
+// in the same chunk and in the same time.
 func BytesToBlockNBT(in []byte) (result []define.NBTWithIndex, err error) {
 	if len(in) == 0 {
 		return
@@ -53,12 +51,14 @@ func BytesToBlockNBT(in []byte) (result []define.NBTWithIndex, err error) {
 	r := protocol.NewReader(buf, 0, false)
 
 	for buf.Len() > 0 {
-		var index uint32
+		var index define.ChunkBlockIndex
 		var m map[string]any
-		r.Varuint32(&index)
+
+		index.Unmarshal(buf)
 		r.NBT(&m, nbt.LittleEndian)
+
 		result = append(result, define.NBTWithIndex{
-			Index: define.SubChunkBlockIndex(index),
+			Index: index,
 			NBT:   m,
 		})
 	}
@@ -78,21 +78,18 @@ func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) (result []byte, err error
 	length := uint32(len(diff.Removed))
 	w.Varuint32(&length)
 	for _, value := range diff.Removed {
-		val := uint32(value)
-		w.Varuint32(&val)
+		value.Marshal(buf)
 	}
 
 	length = uint32(len(diff.Added))
 	w.Varuint32(&length)
 	for _, value := range diff.Added {
-		index := uint32(value.Index)
-		w.Varuint32(&index)
+		value.Index.Marshal(buf)
 		utils.MarshalNBT(buf, value.NBT, "")
 	}
 
 	for _, value := range diff.Modified {
-		index := uint32(value.Index)
-		w.Varuint32(&index)
+		value.Index.Marshal(buf)
 		w.ByteSlice(&value.DiffNBT)
 	}
 
@@ -122,30 +119,30 @@ func BytesToMultipleDiffNBT(in []byte) (result define.MultipleDiffNBT, err error
 	r := protocol.NewReader(buf, 0, false)
 
 	r.Varuint32(&length)
-	result.Removed = make([]define.SubChunkBlockIndex, length)
+	result.Removed = make([]define.ChunkBlockIndex, length)
 	for i := range length {
-		var value uint32
-		r.Varuint32(&value)
-		result.Removed[i] = define.SubChunkBlockIndex(value)
+		var index define.ChunkBlockIndex
+		index.Unmarshal(buf)
+		result.Removed[i] = index
 	}
 
 	r.Varuint32(&length)
 	result.Added = make([]define.NBTWithIndex, length)
 	for i := range length {
 		var object define.NBTWithIndex
-		var index uint32
-		r.Varuint32(&index)
+		var index define.ChunkBlockIndex
+		index.Unmarshal(buf)
 		r.NBT(&object.NBT, nbt.LittleEndian)
-		object.Index = define.SubChunkBlockIndex(index)
+		object.Index = index
 		result.Added[i] = object
 	}
 
 	for buf.Len() > 0 {
 		var object define.DiffNBTWithIndex
-		var index uint32
-		r.Varuint32(&index)
+		var index define.ChunkBlockIndex
+		index.Unmarshal(buf)
 		r.ByteSlice(&object.DiffNBT)
-		object.Index = define.SubChunkBlockIndex(index)
+		object.Index = define.ChunkBlockIndex(index)
 		result.Modified = append(result.Modified, object)
 	}
 

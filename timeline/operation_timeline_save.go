@@ -12,9 +12,9 @@ import (
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 )
 
-// SaveNOP releases current sub chunk timeline, and
-// don't do more things (will not change ths database).
-func (s *SubChunkTimeline) SaveNOP() {
+// SaveNOP releases current chunk timeline, and don't
+// do more things (will not change ths database).
+func (s *ChunkTimeline) SaveNOP() {
 	s.releaseFunc()
 }
 
@@ -37,7 +37,7 @@ func (s *SubChunkTimeline) SaveNOP() {
 //
 // Save must calling at the last modification of the timeline;
 // otherwise, the timeline will not be able to maintain data consistency.
-func (s *SubChunkTimeline) Save() error {
+func (s *ChunkTimeline) Save() error {
 	var success bool
 
 	if s.isEmpty {
@@ -47,7 +47,7 @@ func (s *SubChunkTimeline) Save() error {
 
 	transaction, err := s.db.OpenTransaction()
 	if err != nil {
-		return fmt.Errorf("(s *SubChunkTimeline) Pop: %v", err)
+		return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 	}
 	defer func() {
 		if !success {
@@ -118,11 +118,11 @@ func (s *SubChunkTimeline) Save() error {
 	// Save global data
 	{
 		err = transaction.Put(
-			define.Sum(s.pos, []byte(define.KeySubChunkGlobalData)...),
+			define.Sum(s.pos, []byte(define.KeyChunkGlobalData)...),
 			globalData.Bytes(),
 		)
 		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
 	}
 
@@ -138,22 +138,22 @@ func (s *SubChunkTimeline) Save() error {
 			latestTimePointUnixTimeBytes,
 		)
 		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
 	}
 
-	// Latest Sub Chunk
+	// Latest Chunk
 	{
-		payload, err := marshal.LayersToBytes(s.latestSubChunk)
+		payload, err := marshal.ChunkMatrixToBytes(s.latestChunk)
 		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
 		err = transaction.Put(
-			define.Sum(s.pos, define.KeyLatestSubChunk),
+			define.Sum(s.pos, define.KeyLatestChunk),
 			payload,
 		)
 		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
 	}
 
@@ -161,14 +161,14 @@ func (s *SubChunkTimeline) Save() error {
 	{
 		payload, err := marshal.BlockNBTBytes(s.latestNBT)
 		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
 		err = transaction.Put(
 			define.Sum(s.pos, []byte(define.KeyLatestNBT)...),
 			payload,
 		)
 		if err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) Save: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
 	}
 

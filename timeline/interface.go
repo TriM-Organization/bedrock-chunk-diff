@@ -28,15 +28,13 @@ type DB interface {
 // Timeline is the function that timeline database should to implement.
 type Timeline interface {
 	DeleteChunkTimeline(pos define.DimChunk) error
-	DeleteSubChunkTimeline(pos define.DimSubChunk) error
-	LoadLatestTimePointUnixTime(pos define.DimSubChunk) (timeStamp int64)
+	LoadLatestTimePointUnixTime(pos define.DimChunk) (timeStamp int64)
 	NewChunkTimeline(pos define.DimChunk) (result *ChunkTimeline, err error)
-	NewSubChunkTimeline(pos define.DimSubChunk) (result *SubChunkTimeline, err error)
-	SaveLatestTimePointUnixTime(pos define.DimSubChunk, timeStamp int64) error
+	SaveLatestTimePointUnixTime(pos define.DimChunk, timeStamp int64) error
 }
 
 // TimelineDatabase wrapper and implements all features from Timeline,
-// and as a provider to provide timeline of chunk/sub chunk related functions.
+// and as a provider to provide timeline of chunk related functions.
 type TimelineDatabase interface {
 	DB
 	Timeline

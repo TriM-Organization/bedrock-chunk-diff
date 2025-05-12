@@ -4,7 +4,7 @@ import "fmt"
 
 // Empty returns whether this timeline is empty or not.
 // If is empty, then calling Save will result in no operation.
-func (s *SubChunkTimeline) Empty() bool {
+func (s *ChunkTimeline) Empty() bool {
 	return s.isEmpty
 }
 
@@ -17,12 +17,12 @@ func (s *SubChunkTimeline) Empty() bool {
 //
 // Note that calling SetMaxLimit will not change the empty states
 // of this timeline.
-func (s *SubChunkTimeline) SetMaxLimit(maxLimit uint) error {
+func (s *ChunkTimeline) SetMaxLimit(maxLimit uint) error {
 	s.maxLimit = max(maxLimit, 1)
 
 	for s.barrierRight-s.barrierLeft+1 > s.maxLimit {
 		if err := s.Pop(); err != nil {
-			return fmt.Errorf("(s *SubChunkTimeline) SetMaxLimit: %v", err)
+			return fmt.Errorf("(s *ChunkTimeline) SetMaxLimit: %v", err)
 		}
 	}
 

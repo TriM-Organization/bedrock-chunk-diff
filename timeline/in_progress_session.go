@@ -13,19 +13,19 @@ import (
 type InProgressSession struct {
 	mu      *sync.Mutex
 	closed  bool
-	session map[define.DimSubChunk]context.Context
+	session map[define.DimChunk]context.Context
 }
 
 // NewInProgressSession returns a new InProgressSession
 func NewInProgressSession() *InProgressSession {
 	return &InProgressSession{
 		mu:      new(sync.Mutex),
-		session: make(map[define.DimSubChunk]context.Context),
+		session: make(map[define.DimChunk]context.Context),
 	}
 }
 
 // Require loads a new session which on pos, and ensure there is only
-// one thread is using a timeline from the same sub chunk.
+// one thread is using a timeline from the same chunk.
 //
 // If there is one thread is using the target timeline, then calling
 // Require will blocking until they finish there using.
@@ -34,7 +34,7 @@ func NewInProgressSession() *InProgressSession {
 // thread could start to using them.
 // If you get Require returned false, then that means the underlying
 // database is closed.
-func (i *InProgressSession) Require(pos define.DimSubChunk) (releaseFunc func(), success bool) {
+func (i *InProgressSession) Require(pos define.DimChunk) (releaseFunc func(), success bool) {
 	var cancelFunc context.CancelFunc
 
 	for {
@@ -73,7 +73,7 @@ func (i *InProgressSession) Require(pos define.DimSubChunk) (releaseFunc func(),
 		{
 			cancelFunc()
 			delete(i.session, pos)
-			newMapping := make(map[define.DimSubChunk]context.Context)
+			newMapping := make(map[define.DimChunk]context.Context)
 			maps.Copy(newMapping, i.session)
 			i.session = newMapping
 		}

@@ -11,8 +11,8 @@ import (
 
 // "next" is an internal implement detail.
 // The feature of "next" is like one progress of prefix sum.
-func (s *SubChunkTimeline) next() (
-	oriLayers define.Layers, oriNBTs []define.NBTWithIndex, updateUnixTime int64,
+func (s *ChunkTimeline) next() (
+	oriChunk define.ChunkMatrix, oriNBTs []define.NBTWithIndex, updateUnixTime int64,
 	isLastElement bool, err error,
 ) {
 	if s.isEmpty {
@@ -26,21 +26,12 @@ func (s *SubChunkTimeline) next() (
 			define.IndexBlockDu(s.pos, s.ptr),
 		)
 
-		diff, err := marshal.BytesToLayersDiff(payload)
+		diff, err := marshal.BytesToChunkDiffMatrix(payload)
 		if err != nil {
 			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
 		}
 
-		for index := range s.currentSubChunk {
-			_ = oriLayers.Layer(index)
-		}
-		for index := range diff {
-			_ = oriLayers.Layer(index)
-		}
-
-		for index := range oriLayers {
-			oriLayers[index] = define.Restore(s.currentSubChunk.Layer(index), diff.Layer(index))
-		}
+		oriChunk = define.ChunkRestore(s.latestChunk, diff)
 	}
 
 	// NBTs
@@ -63,20 +54,20 @@ func (s *SubChunkTimeline) next() (
 	// Timeline Unix Time
 	updateUnixTime = s.timelineUnixTime[s.ptr-s.barrierLeft]
 
-	s.currentSubChunk = oriLayers
+	s.currentChunk = oriChunk
 	s.currentNBT = oriNBTs
 	s.ptr++
 
 	if s.ptr > s.barrierRight {
 		s.ptr = s.barrierLeft
-		s.currentSubChunk = define.Layers{}
+		s.currentChunk = define.ChunkMatrix{}
 		s.currentNBT = nil
 	}
 
-	return oriLayers, oriNBTs, updateUnixTime, isLastElement, nil
+	return oriChunk, oriNBTs, updateUnixTime, isLastElement, nil
 }
 
-// Next gets the next time point of current sub chunk and the NBT blocks in it.
+// Next gets the next time point of current chunk and the NBT blocks in it.
 //
 // With the call to Next, we granted that the returned time keeps increasing until
 // the entire time series is traversed.
@@ -86,29 +77,32 @@ func (s *SubChunkTimeline) next() (
 //
 // When it is already at the end of the timeline, calling Next again will back to
 // the earliest time point. In other words, Next is self-loop and can be called continuously.
-func (s *SubChunkTimeline) Next() (
-	subChunk *chunk.SubChunk, nbts []map[string]any, updateUnixTime int64,
+func (s *ChunkTimeline) Next() (
+	c *chunk.Chunk, nbts []map[string]any, updateUnixTime int64,
 	isLastElement bool, err error,
 ) {
-	var oriLayers define.Layers
+	var oriChunk define.ChunkMatrix
 	var oriNBTs []define.NBTWithIndex
 
-	oriLayers, oriNBTs, updateUnixTime, isLastElement, err = s.next()
+	oriChunk, oriNBTs, updateUnixTime, isLastElement, err = s.next()
 	if err != nil {
-		return nil, nil, 0, false, fmt.Errorf("(s *SubChunkTimeline) Next: %v", err)
+		return nil, nil, 0, false, fmt.Errorf("(s *ChunkTimeline) Next: %v", err)
 	}
 
 	// Blocks
-	subChunk = chunk.NewSubChunk(block.AirRuntimeID)
-	for index, value := range oriLayers {
-		layer := subChunk.Layer(uint8(index))
+	c = chunk.NewChunk(block.AirRuntimeID, s.pos.Dimension.Range())
+	for ChunkIndex, layers := range oriChunk {
+		sub := c.SubChunk(int16(ChunkIndex))
+		for index, value := range layers {
+			layer := sub.Layer(uint8(index))
 
-		ptr := 0
-		for x := range uint8(16) {
-			for y := range uint8(16) {
-				for z := range uint8(16) {
-					layer.Set(x, y, z, s.blockPalette.BlockRuntimeID(value[ptr]))
-					ptr++
+			ptr := 0
+			for x := range uint8(16) {
+				for y := range uint8(16) {
+					for z := range uint8(16) {
+						layer.Set(x, y, z, s.blockPalette.BlockRuntimeID(value[ptr]))
+						ptr++
+					}
 				}
 			}
 		}
@@ -123,27 +117,30 @@ func (s *SubChunkTimeline) Next() (
 	return
 }
 
-// Last gets the latest time point of current sub chunk and the NBT blocks in it.
+// Last gets the latest time point of current chunk and the NBT blocks in it.
 // Time complexity: O(1).
-func (s *SubChunkTimeline) Last() (
-	subChunk *chunk.SubChunk,
+func (s *ChunkTimeline) Last() (
+	c *chunk.Chunk,
 	nbts []map[string]any,
 	updateUnixTime int64,
 ) {
-	var oriLayers define.Layers = s.latestSubChunk
+	var oriChunk define.ChunkMatrix = s.latestChunk
 	var oriNBTs []define.NBTWithIndex = s.latestNBT
 
 	// Blocks
-	subChunk = chunk.NewSubChunk(block.AirRuntimeID)
-	for index, value := range oriLayers {
-		layer := subChunk.Layer(uint8(index))
+	c = chunk.NewChunk(block.AirRuntimeID, s.pos.Dimension.Range())
+	for ChunkIndex, layers := range oriChunk {
+		sub := c.SubChunk(int16(ChunkIndex))
+		for index, value := range layers {
+			layer := sub.Layer(uint8(index))
 
-		ptr := 0
-		for x := range uint8(16) {
-			for y := range uint8(16) {
-				for z := range uint8(16) {
-					layer.Set(x, y, z, s.blockPalette.BlockRuntimeID(value[ptr]))
-					ptr++
+			ptr := 0
+			for x := range uint8(16) {
+				for y := range uint8(16) {
+					for z := range uint8(16) {
+						layer.Set(x, y, z, s.blockPalette.BlockRuntimeID(value[ptr]))
+						ptr++
+					}
 				}
 			}
 		}
@@ -155,5 +152,5 @@ func (s *SubChunkTimeline) Last() (
 		nbts = append(nbts, value.NBT)
 	}
 
-	return subChunk, nbts, s.timelineUnixTime[len(s.timelineUnixTime)-1]
+	return c, nbts, s.timelineUnixTime[len(s.timelineUnixTime)-1]
 }

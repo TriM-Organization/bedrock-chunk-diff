@@ -12,28 +12,28 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
-// NBTWithIndex represents a single NBT block entity data who in a sub chunk.
+// NBTWithIndex represents a single NBT block entity data who in a chunk.
 // Index is an integer that range from 0 to 4095, and could be decode as a
-// block relative position to the sub chunk.
+// block relative position to the chunk.
 type NBTWithIndex struct {
-	Index SubChunkBlockIndex
+	Index ChunkBlockIndex
 	NBT   map[string]any
 }
 
-// NewBlockNBT creates a new NBTWithSubChunkIndex by given relativePos and nbt.
-// relativePos is the relative position of this block NBT to sub chunk,
+// NewBlockNBT creates a new NBTWithIndex by given relativePos and nbt.
+// relativePos is the relative position of this block NBT to chunk,
 // and nbt is the block NBT data of this NBT block.
-func NewBlockNBT(relativePos [3]uint8, nbt map[string]any) *NBTWithIndex {
+func NewBlockNBT(relativePos [3]uint16, nbt map[string]any) *NBTWithIndex {
 	n := &NBTWithIndex{NBT: nbt}
-	n.Index.UpdateIndex(relativePos[0], relativePos[1], relativePos[2])
+	n.Index.UpdateIndex(uint8(relativePos[0]), int16(relativePos[1]), uint8(relativePos[2]))
 	return n
 }
 
 // DiffNBTWithIndex represents the difference between the same NBT block but on different time.
 // Index is an integer that range from 0 to 4095, and could be decode as a block relative position
-// to the sub chunk.
+// to the chunk.
 type DiffNBTWithIndex struct {
-	Index   SubChunkBlockIndex
+	Index   ChunkBlockIndex
 	DiffNBT []byte
 }
 
@@ -82,7 +82,7 @@ func NewDiffNBT(olderNBT *NBTWithIndex, newerNBT *NBTWithIndex) (result *DiffNBT
 }
 
 // Restore use olderNBT and DiffNBTWithIndex it self to compute the newer block NBT data,
-// and return the restor result that with the same sub chunk block index to olderNBt but newer NBT.
+// and return the restor result that with the same chunk block index to olderNBt but newer NBT.
 //
 // Note that you could do this operation for all difference like []DiffNBTWithIndex,
 // then you will get the final block NBT data that represents the latest one.
@@ -126,25 +126,25 @@ func (d DiffNBTWithIndex) Restore(olderNBT NBTWithIndex) (result *NBTWithIndex, 
 	return
 }
 
-// MultipleDiffNBT represents the difference between NBT blocks in the same sub chunk but different times.
-// All the NBT blocks should in the same position in this sub chunk, and MultipleDiffNBT just refer to the
+// MultipleDiffNBT represents the difference between NBT blocks in the same chunk but different times.
+// All the NBT blocks should in the same position in this chunk, and MultipleDiffNBT just refer to the
 // states (add/remove/modify) of these blocks in different times.
 type MultipleDiffNBT struct {
-	Removed  []SubChunkBlockIndex
+	Removed  []ChunkBlockIndex
 	Added    []NBTWithIndex
 	Modified []DiffNBTWithIndex
 }
 
-// NBTDifference computes the difference between multiple block NBT changes in one single sub chunk.
-// older and newer are represents the different time of these NBT blocks in the same sub chunk.
+// NBTDifference computes the difference between multiple block NBT changes in one single chunk.
+// older and newer are represents the different time of these NBT blocks in the same chunk.
 //
 // Time complexity: O(C×k + (a+b)), a=len(older), b=len(newer).
 //
 // k is the number that shown the counts of changed (modified) NBT blocks.
 // Note that C is not very small and is little big due to we use bsdiff and xxhash for each modified NBT block.
 func NBTDifference(older []NBTWithIndex, newer []NBTWithIndex) (result *MultipleDiffNBT, err error) {
-	olderSet := make(map[SubChunkBlockIndex]*NBTWithIndex)
-	newerSet := make(map[SubChunkBlockIndex]*NBTWithIndex)
+	olderSet := make(map[ChunkBlockIndex]*NBTWithIndex)
+	newerSet := make(map[ChunkBlockIndex]*NBTWithIndex)
 	for _, value := range older {
 		olderSet[value.Index] = &value
 	}
@@ -152,8 +152,8 @@ func NBTDifference(older []NBTWithIndex, newer []NBTWithIndex) (result *Multiple
 		newerSet[value.Index] = &value
 	}
 
-	removed := make([]SubChunkBlockIndex, 0)
-	removedSet := make(map[SubChunkBlockIndex]bool)
+	removed := make([]ChunkBlockIndex, 0)
+	removedSet := make(map[ChunkBlockIndex]bool)
 	added := make([]NBTWithIndex, 0)
 	modified := make([]DiffNBTWithIndex, 0)
 
@@ -194,7 +194,7 @@ func NBTDifference(older []NBTWithIndex, newer []NBTWithIndex) (result *Multiple
 	}, nil
 }
 
-// NBTRestore computes the newer block NBT data of this sub chunk by given old and diff.
+// NBTRestore computes the newer block NBT data of this chunk by given old and diff.
 //
 // Time complexity: O(a+C×b), a=len(old), b=len(diff.Modified).
 // Note that C is not very small and is little big due to we use bsdiff and xxhash for each modified NBT block.
@@ -225,7 +225,7 @@ func NBTRestore(old []NBTWithIndex, diff MultipleDiffNBT) (result []NBTWithIndex
 	result = append(result, diff.Added...)
 
 	// Modified
-	olderSet := make(map[SubChunkBlockIndex]NBTWithIndex)
+	olderSet := make(map[ChunkBlockIndex]NBTWithIndex)
 	for _, value := range oldCopy {
 		olderSet[value.Index] = value
 	}
@@ -238,7 +238,7 @@ func NBTRestore(old []NBTWithIndex, diff MultipleDiffNBT) (result []NBTWithIndex
 	}
 
 	// No change
-	changedSet := make(map[SubChunkBlockIndex]bool)
+	changedSet := make(map[ChunkBlockIndex]bool)
 	for _, value := range diff.Removed {
 		changedSet[value] = true
 	}

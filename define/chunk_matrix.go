@@ -1,0 +1,45 @@
+package define
+
+type (
+	// ChunkMatrix represents the chunk matrix that holds all
+	// block of this chunk. A chunk can have multiple sub chunks,
+	// and each sub chunks can have multiple layers.
+	// A single layer in one sub chunk only have 4096 blocks.
+	ChunkMatrix []Layers
+	// ChunkDiffMatrix represents the difference for all sub chunks
+	// in the target chunk between two different times.
+	ChunkDiffMatrix []LayersDiff
+)
+
+// ChunkDifference computes the difference between older and newer.
+// We assume len(older) = len(newer).
+//
+// Time complexity: O(n×L×4096), n=len(older).
+// L is the average count of layers of each sub chunk have.
+func ChunkDifference(older ChunkMatrix, newer ChunkMatrix) ChunkDiffMatrix {
+	result := make(ChunkDiffMatrix, len(older))
+	for i := range result {
+		result[i] = LayerDifference(older[i], newer[i])
+	}
+	return result
+}
+
+// BlockRestore use old and diff to compute the newer chunk matrix.
+// We assume len(old) = len(diff).
+//
+// Time complexity: O(n×L×4096), n=len(old).
+// L is the average count of layers of each sub chunk have.
+//
+// Note that you could do this operation for all difference array,
+// then you will get the final block matrix that represents the
+// latest one.
+//
+// In this case, the time complexity is O(k×n×L×4096) where k is the
+// length of these difference array.
+func ChunkRestore(old ChunkMatrix, diff ChunkDiffMatrix) ChunkMatrix {
+	result := make(ChunkMatrix, len(old))
+	for i := range result {
+		result[i] = LayerRestore(old[i], diff[i])
+	}
+	return result
+}
