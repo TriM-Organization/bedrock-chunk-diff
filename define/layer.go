@@ -17,7 +17,7 @@ type (
 func (l *Layers) Layer(layer int) BlockMatrix {
 	for layer >= len(*l) {
 		temp := *l
-		temp = append(temp, NewMatrix[BlockMatrix](true))
+		temp = append(temp, nil)
 		*l = temp
 	}
 	return (*l)[layer]
@@ -29,7 +29,7 @@ func (l *Layers) Layer(layer int) BlockMatrix {
 func (d *LayersDiff) Layer(layer int) DiffMatrix {
 	for layer >= len(*d) {
 		temp := *d
-		temp = append(temp, NewMatrix[DiffMatrix](true))
+		temp = append(temp, nil)
 		*d = temp
 	}
 	return (*d)[layer]

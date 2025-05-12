@@ -25,11 +25,11 @@ func BlockMatrixToBytes(buf *bytes.Buffer, blockMatrix define.BlockMatrix) {
 func BytesToBlockMatrix(buf *bytes.Buffer) define.BlockMatrix {
 	b, _ := buf.ReadByte()
 	if b == MatrixStateEmpty {
-		return define.NewMatrix[define.BlockMatrix](true)
+		return nil
 	}
 
 	r := protocol.NewReader(buf, 0, false)
-	result := define.NewMatrix[define.BlockMatrix](false)
+	result := define.NewMatrix[define.BlockMatrix]()
 
 	for i := range define.MatrixSize {
 		var value int32
@@ -58,11 +58,11 @@ func DiffMatrixToBytes(buf *bytes.Buffer, diffMatrix define.DiffMatrix) {
 func BytesToDiffMatrix(buf *bytes.Buffer) define.DiffMatrix {
 	b, _ := buf.ReadByte()
 	if b == MatrixStateEmpty {
-		return define.NewMatrix[define.DiffMatrix](true)
+		return nil
 	}
 
 	r := protocol.NewReader(buf, 0, false)
-	result := define.NewMatrix[define.DiffMatrix](false)
+	result := define.NewMatrix[define.DiffMatrix]()
 
 	for i := range define.MatrixSize {
 		var value int32

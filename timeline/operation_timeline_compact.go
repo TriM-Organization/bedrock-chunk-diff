@@ -72,7 +72,7 @@ func (s *ChunkTimeline) Compact() error {
 			for whichLayer, layer := range Chunk {
 				l := define.Layers{}
 				_ = l.Layer(whichLayer)
-				l[whichLayer] = define.NewMatrix[define.BlockMatrix](false)
+				l[whichLayer] = define.NewMatrix[define.BlockMatrix]()
 
 				for index, blockPaletteIndex := range layer {
 					l[whichLayer][index] = newBlockPalette.BlockPaletteIndex(

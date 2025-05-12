@@ -15,13 +15,9 @@ type (
 )
 
 // NewMatrix creates and returns new T.
-// If empty is true, then return nil to reduce memory used.
-// All matrix should be created from this function.
-func NewMatrix[T BlockMatrix | DiffMatrix](empty bool) T {
-	if !empty {
-		return &[MatrixSize]int32{}
-	}
-	return nil
+// Note that the returned T is not nil.
+func NewMatrix[T BlockMatrix | DiffMatrix]() T {
+	return &[MatrixSize]int32{}
 }
 
 // MatrixIsEmpty checks the martix T is empty or not.
@@ -39,7 +35,7 @@ func BlockDifference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
 		return DiffMatrix(newer)
 	}
 
-	result := NewMatrix[DiffMatrix](false)
+	result := NewMatrix[DiffMatrix]()
 
 	if MatrixIsEmpty(newer) {
 		for i := range MatrixSize {
@@ -50,6 +46,17 @@ func BlockDifference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
 
 	for i := range MatrixSize {
 		result[i] = newer[i] - older[i]
+	}
+
+	isAllAir := true
+	for _, value := range result {
+		if value != 0 {
+			isAllAir = false
+		}
+	}
+
+	if isAllAir {
+		return nil
 	}
 	return result
 }
@@ -65,7 +72,7 @@ func BlockDifference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
 func BlockRestore(old BlockMatrix, diff DiffMatrix) BlockMatrix {
 	if MatrixIsEmpty(old) {
 		if MatrixIsEmpty(diff) {
-			return NewMatrix[BlockMatrix](true)
+			return nil
 		}
 		return BlockMatrix(diff)
 	}
@@ -74,7 +81,7 @@ func BlockRestore(old BlockMatrix, diff DiffMatrix) BlockMatrix {
 		return old
 	}
 
-	result := NewMatrix[BlockMatrix](false)
+	result := NewMatrix[BlockMatrix]()
 	for index, value := range diff {
 		result[index] = old[index] + value
 	}
