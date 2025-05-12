@@ -17,13 +17,32 @@ type TimelineDB struct {
 // Open open a level database that used for
 // chunk delta update whose at path.
 // If not exist, then create a new database.
-func Open(path string) (result TimelineDatabase, err error) {
+//
+// When noGrowSync is true, skips the truncate call when growing the database.
+// Setting this to true is only safe on non-ext3/ext4 systems.
+// Skipping truncation avoids preallocation of hard drive space and
+// bypasses a truncate() and fsync() syscall on remapping.
+//   - See also: https://github.com/boltdb/bolt/issues/284
+//
+// Setting the NoSync flag will cause the database to skip fsync()
+// calls after each commit. This can be useful when bulk loading data
+// into a database and you can restart the bulk load in the event of
+// a system failure or database corruption. Do not set this flag for
+// normal use.
+//
+// If the package global IgnoreNoSync constant is true, this value is
+// ignored.  See the comment on that constant for more details.
+//
+// THIS IS UNSAFE. PLEASE USE WITH CAUTION.
+func Open(path string, noGrowSync bool, noSync bool) (result TimelineDatabase, err error) {
 	timelineDB := &TimelineDB{
 		sessions: NewInProgressSession(),
 	}
 
 	db, err := bbolt.Open(path, 0600, &bbolt.Options{
 		FreelistType: bbolt.FreelistMapType,
+		NoGrowSync:   noGrowSync,
+		NoSync:       noSync,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Open: %v", err)
