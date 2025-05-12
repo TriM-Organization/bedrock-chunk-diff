@@ -46,10 +46,10 @@ func main() {
 	}
 	defer w.CloseWorld()
 
-	startUnixTime := time.Now().Unix()
+	startTime := time.Now()
 	counter := 0
 	defer func() {
-		fmt.Println("Time used:", time.Now().Unix()-startUnixTime, "seconds")
+		fmt.Println("Time used:", time.Since(startTime))
 		fmt.Println("Find chunks:", counter)
 	}()
 
