@@ -47,8 +47,10 @@ func main() {
 	defer w.CloseWorld()
 
 	startUnixTime := time.Now().Unix()
+	counter := 0
 	defer func() {
 		fmt.Println("Time used:", time.Now().Unix()-startUnixTime, "seconds")
+		fmt.Println("Find chunks:", counter)
 	}()
 
 	err = db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
@@ -58,6 +60,7 @@ func main() {
 		err = bucket.ForEach(func(k, v []byte) error {
 			pos := define.IndexInv(k)
 			waiter.Add(1)
+			counter++
 			go func() {
 				defer func() {
 					waiter.Done()
