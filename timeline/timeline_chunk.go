@@ -90,7 +90,9 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 		isReadOnly:   readOnly,
 		releaseFunc:  releaseFunc,
 		blockPalette: define.NewBlockPalette(),
+		currentChunk: make(define.ChunkMatrix, pos.Dimension.Height()>>4),
 		maxLimit:     DefaultMaxLimit,
+		latestChunk:  make(define.ChunkMatrix, pos.Dimension.Height()>>4),
 	}
 
 	gzippedGlobalData := t.Get(
