@@ -113,7 +113,6 @@ func BytesToMultipleDiffNBT(in []byte) (result define.MultipleDiffNBT, err error
 		err = fmt.Errorf("BytesToMultipleDiffNBT: %v", err)
 		return
 	}
-	result.Modified = make([]define.DiffNBTWithIndex, 0)
 
 	buf := bytes.NewBuffer(originBytes)
 	r := protocol.NewReader(buf, 0, false)
