@@ -17,6 +17,7 @@ func IterRange(
 	w world.World,
 	enumChunks []define.DimChunk,
 	rangeDimension int,
+	maxConcurrent int,
 	providedUnixTime int64,
 	ensureExistOne bool,
 ) {
@@ -28,6 +29,8 @@ func IterRange(
 	}()
 
 	err := db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
+		var startGoRoutines = 0
+
 		bucket := tx.Bucket(timeline.DatabaseKeyChunkIndex)
 		waiter := new(sync.WaitGroup)
 
@@ -35,12 +38,24 @@ func IterRange(
 			if bucket.Get(define.Index(pos)) == nil {
 				continue
 			}
-			waiter.Add(1)
 			counter++
-			go SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
+
+			if maxConcurrent == 0 {
+				SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
+			} else {
+				if startGoRoutines > maxConcurrent {
+					waiter.Wait()
+					startGoRoutines = 0
+				}
+				startGoRoutines++
+				waiter.Add(1)
+				go SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
+			}
 		}
 
-		waiter.Wait()
+		if maxConcurrent != 0 {
+			waiter.Wait()
+		}
 		return nil
 	})
 	if err != nil {

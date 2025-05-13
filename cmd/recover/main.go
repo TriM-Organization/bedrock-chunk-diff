@@ -17,6 +17,7 @@ import (
 var (
 	path             *string
 	output           *string
+	maxConcurrent    *int
 	useRange         *bool
 	rangeDimension   *int
 	rangeStartX      *int
@@ -32,6 +33,7 @@ var (
 func init() {
 	path = flag.String("path", "", "The path of your timeline database.")
 	output = flag.String("output", "", "The path to output your Minecraft world.")
+	maxConcurrent = flag.Int("max-concurrent", 4096, "The maximum concurrent quantity.")
 
 	useRange = flag.Bool("use-range", false, "If you would like recover the part of the world, but not the entire.")
 	rangeDimension = flag.Int("range-dimension", 0, "Where to find these chunks (only for use-range flag)")
@@ -62,6 +64,9 @@ func init() {
 	}
 	if len(*output) == 0 {
 		log.Fatalln("Please provide the path to output your Minecraft world.\n\te.g. -output \"mcworld\"")
+	}
+	if *maxConcurrent < 0 {
+		log.Fatalln("max-concurrent can't less than 0.")
 	}
 }
 
@@ -111,12 +116,12 @@ func main() {
 		}
 
 		if shouldIterEntire {
-			IterRangeEntireDatabase(db, w, enumChunks, *rangeDimension, *providedUnixTime, *ensureExistOne)
+			IterRangeEntireDatabase(db, w, enumChunks, *rangeDimension, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 		} else {
-			IterRange(db, w, enumChunks, *rangeDimension, *providedUnixTime, *ensureExistOne)
+			IterRange(db, w, enumChunks, *rangeDimension, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 		}
 	} else {
-		IterEntireDatabase(db, w, *providedUnixTime, *ensureExistOne)
+		IterEntireDatabase(db, w, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 	}
 
 	fmt.Println("ALL DOWN :)")
