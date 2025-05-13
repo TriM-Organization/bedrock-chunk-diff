@@ -40,7 +40,7 @@ func init() {
 	rangeEndZ = flag.Int("range-end-z", 0, "The ending point Z coordinate to be restored.")
 
 	providedUnixTime = flag.Int64(
-		"provided_unix_time",
+		"provided-unix-time",
 		time.Now().Unix(),
 		"Restore to the world closest to this time (earlier than or equal to the given time).",
 	)
