@@ -28,10 +28,10 @@ func main() {
 	flag.Parse()
 
 	if len(*path) == 0 {
-		log.Fatalln(`Please provide the path of your timeline database. e.g. -path "test"`)
+		log.Fatalln("Please provide the path of your timeline database.\n\te.g. -path \"test\"")
 	}
 	if len(*output) == 0 {
-		log.Fatalln(`Please provide the path to output your Minecraft world. -output "mcworld"`)
+		log.Fatalln("Please provide the path to output your Minecraft world.\n\te.g. -output \"mcworld\"")
 	}
 
 	db, err := timeline.Open(*path, *noGrowSync, *noSync)
