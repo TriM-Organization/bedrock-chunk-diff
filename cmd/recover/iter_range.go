@@ -16,7 +16,6 @@ func IterRange(
 	db timeline.TimelineDatabase,
 	w world.World,
 	enumChunks []define.DimChunk,
-	rangeDimension int,
 	maxConcurrent int,
 	providedUnixTime int64,
 	ensureExistOne bool,

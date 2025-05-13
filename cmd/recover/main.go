@@ -116,9 +116,9 @@ func main() {
 		}
 
 		if shouldIterEntire {
-			IterRangeEntireDatabase(db, w, enumChunks, *rangeDimension, *maxConcurrent, *providedUnixTime, *ensureExistOne)
+			IterRangeEntireDatabase(db, w, enumChunks, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 		} else {
-			IterRange(db, w, enumChunks, *rangeDimension, *maxConcurrent, *providedUnixTime, *ensureExistOne)
+			IterRange(db, w, enumChunks, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 		}
 	} else {
 		IterEntireDatabase(db, w, *maxConcurrent, *providedUnixTime, *ensureExistOne)
