@@ -36,7 +36,7 @@ func init() {
 	maxConcurrent = flag.Int("max-concurrent", 4096, "The maximum concurrent quantity. Set 0 to disable. Note that set to 1 is slow than when set to 0.")
 
 	useRange = flag.Bool("use-range", false, "If you would like recover the part of the world, but not the entire.")
-	rangeDimension = flag.Int("range-dimension", 0, "Where to find these chunks (only for use-range flag)")
+	rangeDimension = flag.Int("range-dimension", 0, "Where to find these chunks (only valid when enable use-range flag)")
 	rangeStartX = flag.Int("range-start-x", 0, "The starting point X coordinate to be restored.")
 	rangeStartZ = flag.Int("range-start-z", 0, "The starting point Z coordinate to be restored.")
 	rangeEndX = flag.Int("range-end-x", 0, "The ending point X coordinate to be restored.")
@@ -45,18 +45,18 @@ func init() {
 	providedUnixTime = flag.Int64(
 		"provided-unix-time",
 		time.Now().Unix(),
-		"Restore to the world closest to this time (earlier than or equal to the given time).",
+		"Restore to the world closest to this time (earlier than or equal to the given time). The default value is the current time.",
 	)
 	ensureExistOne = flag.Bool(
 		"ensure-exist-one",
-		false,
+		true,
 		""+
 			"If the specified chunk exists in the database but none of the time points on this "+
 			"chunk meet the given time conditions, ensure that at least the closest one can be selected.",
 	)
 
-	noGrowSync = flag.Bool("no-grow-sync", false, "Database settings: No grow sync.")
-	noSync = flag.Bool("no-sync", false, "Database settings: No Sync.")
+	noGrowSync = flag.Bool("no-grow-sync", true, "Database settings: No grow sync.")
+	noSync = flag.Bool("no-sync", true, "Database settings: No Sync.")
 
 	flag.Parse()
 	if len(*path) == 0 {
