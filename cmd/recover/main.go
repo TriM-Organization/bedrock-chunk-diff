@@ -24,6 +24,7 @@ var (
 	rangeEndX        *int
 	rangeEndZ        *int
 	providedUnixTime *int64
+	ensureExistOne   *bool
 	noGrowSync       *bool
 	noSync           *bool
 )
@@ -43,6 +44,13 @@ func init() {
 		"provided-unix-time",
 		time.Now().Unix(),
 		"Restore to the world closest to this time (earlier than or equal to the given time).",
+	)
+	ensureExistOne = flag.Bool(
+		"ensure-exist-one",
+		false,
+		""+
+			"If the specified chunk exists in the database but none of the time points on this "+
+			"chunk meet the given time conditions, ensure that at least the closest one can be selected.",
 	)
 
 	noGrowSync = flag.Bool("no-grow-sync", false, "Database settings: No grow sync.")
@@ -103,12 +111,12 @@ func main() {
 		}
 
 		if shouldIterEntire {
-			IterRangeEntireDatabase(db, w, enumChunks, *rangeDimension, *providedUnixTime)
+			IterRangeEntireDatabase(db, w, enumChunks, *rangeDimension, *providedUnixTime, *ensureExistOne)
 		} else {
-			IterRange(db, w, enumChunks, *rangeDimension, *providedUnixTime)
+			IterRange(db, w, enumChunks, *rangeDimension, *providedUnixTime, *ensureExistOne)
 		}
 	} else {
-		IterEntireDatabase(db, w, *providedUnixTime)
+		IterEntireDatabase(db, w, *providedUnixTime, *ensureExistOne)
 	}
 
 	fmt.Println("ALL DOWN :)")

@@ -16,6 +16,7 @@ func IterEntireDatabase(
 	db timeline.TimelineDatabase,
 	w world.World,
 	providedUnixTime int64,
+	ensureExistOne bool,
 ) {
 	startTime := time.Now()
 	counter := 0
@@ -32,7 +33,7 @@ func IterEntireDatabase(
 			pos := define.IndexInv(k)
 			waiter.Add(1)
 			counter++
-			go SingleChunkRunner(db, w, providedUnixTime, waiter, pos)
+			go SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
 			return nil
 		})
 		if err != nil {

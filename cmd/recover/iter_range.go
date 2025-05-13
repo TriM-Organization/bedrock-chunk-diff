@@ -18,6 +18,7 @@ func IterRange(
 	enumChunks []define.DimChunk,
 	rangeDimension int,
 	providedUnixTime int64,
+	ensureExistOne bool,
 ) {
 	startTime := time.Now()
 	counter := 0
@@ -36,7 +37,7 @@ func IterRange(
 			}
 			waiter.Add(1)
 			counter++
-			go SingleChunkRunner(db, w, providedUnixTime, waiter, pos)
+			go SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
 		}
 
 		waiter.Wait()

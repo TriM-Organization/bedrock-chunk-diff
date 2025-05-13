@@ -16,6 +16,7 @@ func SingleChunkRunner(
 	db timeline.TimelineDatabase,
 	w world.World,
 	providedUnixTime int64,
+	ensureExistOne bool,
 	waiter *sync.WaitGroup,
 	pos define.DimChunk,
 ) {
@@ -44,7 +45,10 @@ func SingleChunkRunner(
 	}
 
 	if index <= 0 {
-		return
+		if !ensureExistOne {
+			return
+		}
+		index = 1
 	}
 
 	if index >= tl.AllTimePointLen() {
