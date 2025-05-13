@@ -77,7 +77,7 @@ func Open(path string, noGrowSync bool, noSync bool) (result TimelineDatabase, e
 	return timelineDB, nil
 }
 
-// CloseTimelineDB closed the timeline database.
+// CloseTimelineDB closes the timeline database.
 // It will wait until all the timelines in use
 // are released before closing the database.
 func (t *TimelineDB) CloseTimelineDB() error {
