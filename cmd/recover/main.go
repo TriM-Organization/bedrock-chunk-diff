@@ -73,10 +73,10 @@ func main() {
 	if *useRange {
 		var shouldIterEntire bool
 
-		startX := int32(min(*rangeStartX, *rangeEndX))
-		startZ := int32(min(*rangeStartZ, *rangeEndZ))
-		endX := int32(max(*rangeStartX, *rangeEndX))
-		endZ := int32(max(*rangeStartZ, *rangeEndZ))
+		startX := int32(min(*rangeStartX, *rangeEndX)) >> 4
+		startZ := int32(min(*rangeStartZ, *rangeEndZ)) >> 4
+		endX := int32(max(*rangeStartX, *rangeEndX)) >> 4
+		endZ := int32(max(*rangeStartZ, *rangeEndZ)) >> 4
 
 		enumChunks := make([]define.DimChunk, 0)
 		for x := startX; x <= endX; x++ {
