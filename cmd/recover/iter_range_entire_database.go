@@ -53,6 +53,7 @@ func IterRangeEntireDatabase(
 			counter++
 
 			if maxConcurrent == 0 {
+				waiter.Add(1)
 				SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
 			} else {
 				if startGoRoutines > maxConcurrent {
