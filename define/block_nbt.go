@@ -12,6 +12,11 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
+const (
+	ModifiedNBTBSDiff byte = iota
+	ModifiedNBTOrigin
+)
+
 // NBTWithIndex represents a single NBT block entity data who in a chunk.
 // Index is an integer that range from 0 to 4095, and could be decode as a
 // block relative position to the chunk.
@@ -75,7 +80,7 @@ func NewDiffNBT(olderNBT *NBTWithIndex, newerNBT *NBTWithIndex) (result *DiffNBT
 	if olderNBT.Index != newerNBT.Index {
 		return nil, fmt.Errorf("NewDiffNBT: Can't do difference operation between two blocks in different position")
 	}
-	n := &DiffNBTWithIndex{Index: olderNBT.Index}
+	result = &DiffNBTWithIndex{Index: olderNBT.Index}
 
 	buf := bytes.NewBuffer(nil)
 	utils.MarshalNBT(buf, olderNBT.NBT, "")
@@ -85,6 +90,20 @@ func NewDiffNBT(olderNBT *NBTWithIndex, newerNBT *NBTWithIndex) (result *DiffNBT
 	utils.MarshalNBT(buf, newerNBT.NBT, "")
 	newerNBTBytes := buf.Bytes()
 
+	buf = bytes.NewBuffer(nil)
+	err = binarydist.Diff(bytes.NewBuffer(olderNBTBytes), bytes.NewBuffer(newerNBTBytes), buf)
+	if err != nil {
+		return nil, fmt.Errorf("NewDiffNBT: %v", err)
+	}
+
+	if buf.Len() > len(newerNBTBytes) {
+		buf = bytes.NewBuffer(nil)
+		buf.WriteByte(ModifiedNBTOrigin)
+		buf.Write(newerNBTBytes)
+		result.DiffNBT = buf.Bytes()
+		return
+	}
+
 	olderHash := xxhash.Sum64(olderNBTBytes)
 	olderHashBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(olderHashBytes, olderHash)
@@ -93,16 +112,11 @@ func NewDiffNBT(olderNBT *NBTWithIndex, newerNBT *NBTWithIndex) (result *DiffNBT
 	newerHashBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(newerHashBytes, newerHash)
 
-	buf = bytes.NewBuffer(nil)
-	err = binarydist.Diff(bytes.NewBuffer(olderNBTBytes), bytes.NewBuffer(newerNBTBytes), buf)
-	if err != nil {
-		return nil, fmt.Errorf("NewDiffNBT: %v", err)
-	}
+	result.DiffNBT = append([]byte{ModifiedNBTBSDiff}, olderHashBytes...)
+	result.DiffNBT = append(result.DiffNBT, newerHashBytes...)
+	result.DiffNBT = append(result.DiffNBT, buf.Bytes()...)
 
-	n.DiffNBT = append(olderHashBytes, newerHashBytes...)
-	n.DiffNBT = append(n.DiffNBT, buf.Bytes()...)
-
-	return n, nil
+	return
 }
 
 // Restore use olderNBT and DiffNBTWithIndex it self to compute the newer block NBT data,
@@ -118,8 +132,20 @@ func (d DiffNBTWithIndex) Restore(olderNBT NBTWithIndex) (result *NBTWithIndex, 
 	if d.Index != olderNBT.Index {
 		return nil, fmt.Errorf("Restore: Can't do restore operation between two blocks in different position")
 	}
+	if len(d.DiffNBT) < 1 {
+		return nil, fmt.Errorf("Restore: Broken diff")
+	}
+	result = &NBTWithIndex{Index: olderNBT.Index}
 
-	if len(d.DiffNBT) < 16 {
+	if d.DiffNBT[0] == ModifiedNBTOrigin {
+		err = nbt.NewDecoderWithEncoding(bytes.NewBuffer(d.DiffNBT[1:]), nbt.LittleEndian).Decode(&result.NBT)
+		if err != nil {
+			return nil, fmt.Errorf("Restore: %v", err)
+		}
+		return
+	}
+
+	if len(d.DiffNBT) < 17 {
 		return nil, fmt.Errorf("Restore: Broken diff")
 	}
 
@@ -127,22 +153,21 @@ func (d DiffNBTWithIndex) Restore(olderNBT NBTWithIndex) (result *NBTWithIndex, 
 	utils.MarshalNBT(buf, olderNBT.NBT, "")
 	olderNBTBytes := buf.Bytes()
 
-	if xxhash.Sum64(olderNBTBytes) != binary.LittleEndian.Uint64(d.DiffNBT) {
+	if xxhash.Sum64(olderNBTBytes) != binary.LittleEndian.Uint64(d.DiffNBT[1:]) {
 		return nil, fmt.Errorf("Restore: Given older NBT bytes is not the correct one (hash mismatch)")
 	}
 
 	buf = bytes.NewBuffer(nil)
-	err = binarydist.Patch(bytes.NewBuffer(olderNBTBytes), buf, bytes.NewBuffer(d.DiffNBT[16:]))
+	err = binarydist.Patch(bytes.NewBuffer(olderNBTBytes), buf, bytes.NewBuffer(d.DiffNBT[17:]))
 	if err != nil {
 		return nil, fmt.Errorf("Restore: %v", err)
 	}
 	newerNBTBytes := buf.Bytes()
 
-	if xxhash.Sum64(newerNBTBytes) != binary.LittleEndian.Uint64(d.DiffNBT[8:]) {
+	if xxhash.Sum64(newerNBTBytes) != binary.LittleEndian.Uint64(d.DiffNBT[9:]) {
 		return nil, fmt.Errorf("Restore: Data changed")
 	}
 
-	result = &NBTWithIndex{Index: olderNBT.Index}
 	err = nbt.NewDecoderWithEncoding(bytes.NewBuffer(newerNBTBytes), nbt.LittleEndian).Decode(&result.NBT)
 	if err != nil {
 		return nil, fmt.Errorf("Restore: %v", err)
