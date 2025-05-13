@@ -57,6 +57,9 @@ type ChunkTimeline struct {
 // but return an empty one so you can modify it. The time to create the timeline is only when you
 // save a timeline that not empty to the database.
 //
+// If readOnly is true, then returned a timeline but only can read.
+// For a read only timeline, you also need use ChunkTimeline.Save to release it.
+//
 // Important:
 //
 //   - Once any modifications have been made to the returned timeline, you must save them
