@@ -100,12 +100,12 @@ func main() {
 		})
 
 		if shouldIterEntire {
-			IterRangeEntireDatabase(db, w, enumChunks, rangeDimension, providedUnixTime)
+			IterRangeEntireDatabase(db, w, enumChunks, *rangeDimension, *providedUnixTime)
 		} else {
-			IterRange(db, w, enumChunks, rangeDimension, providedUnixTime)
+			IterRange(db, w, enumChunks, *rangeDimension, *providedUnixTime)
 		}
 	} else {
-		IterEntireDatabase(db, w, providedUnixTime)
+		IterEntireDatabase(db, w, *providedUnixTime)
 	}
 
 	fmt.Println("ALL DOWN :)")

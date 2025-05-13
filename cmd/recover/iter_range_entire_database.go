@@ -16,8 +16,8 @@ func IterRangeEntireDatabase(
 	db timeline.TimelineDatabase,
 	w world.World,
 	enumChunks []define.DimChunk,
-	rangeDimension *int,
-	providedUnixTime *int64,
+	rangeDimension int,
+	providedUnixTime int64,
 ) {
 	startTime := time.Now()
 	counter := 0

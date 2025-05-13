@@ -15,7 +15,7 @@ import (
 func SingleChunkRunner(
 	db timeline.TimelineDatabase,
 	w world.World,
-	providedUnixTime *int64,
+	providedUnixTime int64,
 	waiter *sync.WaitGroup,
 	pos define.DimChunk,
 ) {
@@ -38,7 +38,7 @@ func SingleChunkRunner(
 		return
 	}
 
-	index, hit := slices.BinarySearch(tl.AllTimePoint(), *providedUnixTime)
+	index, hit := slices.BinarySearch(tl.AllTimePoint(), providedUnixTime)
 	if hit {
 		index++
 	}

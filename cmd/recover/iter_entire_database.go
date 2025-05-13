@@ -15,7 +15,7 @@ import (
 func IterEntireDatabase(
 	db timeline.TimelineDatabase,
 	w world.World,
-	providedUnixTime *int64,
+	providedUnixTime int64,
 ) {
 	startTime := time.Now()
 	counter := 0
