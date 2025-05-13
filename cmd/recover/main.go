@@ -33,7 +33,7 @@ var (
 func init() {
 	path = flag.String("path", "", "The path of your timeline database.")
 	output = flag.String("output", "", "The path to output your Minecraft world.")
-	maxConcurrent = flag.Int("max-concurrent", 4096, "The maximum concurrent quantity.")
+	maxConcurrent = flag.Int("max-concurrent", 4096, "The maximum concurrent quantity. Set 0 to disable. Note that set to 1 is slow than when set to 0.")
 
 	useRange = flag.Bool("use-range", false, "If you would like recover the part of the world, but not the entire.")
 	rangeDimension = flag.Int("range-dimension", 0, "Where to find these chunks (only for use-range flag)")
