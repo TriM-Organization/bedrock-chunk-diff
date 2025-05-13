@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"slices"
 	"sync"
 	"time"
 
@@ -26,13 +27,20 @@ func IterEntireDatabase(
 	}()
 
 	err := db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
+		var foundKeyChunkCount bool
 		bucket := tx.Bucket(timeline.DatabaseKeyChunkIndex)
 		waiter := new(sync.WaitGroup)
 
 		err := bucket.ForEach(func(k, v []byte) error {
+			if !foundKeyChunkCount && slices.Equal(k, timeline.DatabaseKeyChunkCount) {
+				foundKeyChunkCount = true
+				return nil
+			}
+
 			pos := define.IndexInv(k)
 			waiter.Add(1)
 			counter++
+
 			go SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
 			return nil
 		})
