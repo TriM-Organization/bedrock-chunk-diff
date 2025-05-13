@@ -1,39 +1,63 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
-	"slices"
-	"sync"
 	"time"
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
 	"github.com/TriM-Organization/bedrock-chunk-diff/timeline"
-	"github.com/TriM-Organization/bedrock-world-operator/chunk"
+	operator_define "github.com/TriM-Organization/bedrock-world-operator/define"
 	"github.com/TriM-Organization/bedrock-world-operator/world"
 	"go.etcd.io/bbolt"
 )
 
-func main() {
-	path := flag.String("path", "", "The path of your timeline database. e.g.")
-	output := flag.String("output", "", "The path to output your Minecraft world")
-	providedUnixTime := flag.Int64(
+var (
+	path             *string
+	output           *string
+	useRange         *bool
+	rangeDimension   *int
+	rangeStartX      *int
+	rangeStartZ      *int
+	rangeEndX        *int
+	rangeEndZ        *int
+	providedUnixTime *int64
+	noGrowSync       *bool
+	noSync           *bool
+)
+
+func init() {
+	path = flag.String("path", "", "The path of your timeline database.")
+	output = flag.String("output", "", "The path to output your Minecraft world.")
+
+	useRange = flag.Bool("use-range", false, "If you would like recover the part of the world, but not the entire.")
+	rangeDimension = flag.Int("range-dimension", 0, "Where to find these chunks (only for use-range flag)")
+	rangeStartX = flag.Int("range-start-x", 0, "The starting point X coordinate to be restored.")
+	rangeStartZ = flag.Int("range-start-z", 0, "The starting point Z coordinate to be restored.")
+	rangeEndX = flag.Int("range-end-x", 0, "The ending point X coordinate to be restored.")
+	rangeEndZ = flag.Int("range-end-z", 0, "The ending point Z coordinate to be restored.")
+
+	providedUnixTime = flag.Int64(
 		"provided_unix_time",
 		time.Now().Unix(),
-		"Restore to the world closest to this time (earlier than or equal to the given time)",
+		"Restore to the world closest to this time (earlier than or equal to the given time).",
 	)
-	noGrowSync := flag.Bool("no_grow_sync", false, "Database settings: No grow sync")
-	noSync := flag.Bool("no_sync", false, "Database settings:No Sync")
-	flag.Parse()
 
+	noGrowSync = flag.Bool("no-grow-sync", false, "Database settings: No grow sync.")
+	noSync = flag.Bool("no-sync", false, "Database settings: No Sync.")
+
+	flag.Parse()
 	if len(*path) == 0 {
 		log.Fatalln("Please provide the path of your timeline database.\n\te.g. -path \"test\"")
 	}
 	if len(*output) == 0 {
 		log.Fatalln("Please provide the path to output your Minecraft world.\n\te.g. -output \"mcworld\"")
 	}
+}
 
+func main() {
 	db, err := timeline.Open(*path, *noGrowSync, *noSync)
 	if err != nil {
 		log.Fatalln(err)
@@ -46,83 +70,42 @@ func main() {
 	}
 	defer w.CloseWorld()
 
-	startTime := time.Now()
-	counter := 0
-	defer func() {
-		fmt.Println("Time used:", time.Since(startTime))
-		fmt.Println("Find chunks:", counter)
-	}()
+	if *useRange {
+		var shouldIterEntire bool
 
-	err = db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(timeline.DatabaseKeyChunkIndex)
-		waiter := new(sync.WaitGroup)
+		startX := int32(min(*rangeStartX, *rangeEndX))
+		startZ := int32(min(*rangeStartZ, *rangeEndZ))
+		endX := int32(max(*rangeStartX, *rangeEndX))
+		endZ := int32(max(*rangeStartZ, *rangeEndZ))
 
-		err = bucket.ForEach(func(k, v []byte) error {
-			pos := define.IndexInv(k)
-			waiter.Add(1)
-			counter++
-			go func() {
-				defer func() {
-					waiter.Done()
-					fmt.Printf("Chunk (%d, %d) in dim %d is down.\n", pos.ChunkPos[0], pos.ChunkPos[1], pos.Dimension)
-				}()
-
-				tl, err := db.NewChunkTimeline(pos, true)
-				if err != nil {
-					return
-				}
-				defer tl.Save()
-
-				if tl.Empty() {
-					return
-				}
-
-				index, hit := slices.BinarySearch(tl.AllTimePoint(), *providedUnixTime)
-				if hit {
-					index++
-				}
-
-				if index <= 0 {
-					return
-				}
-
-				var c *chunk.Chunk
-				var nbts []map[string]any
-
-				if index >= tl.AllTimePointLen() {
-					c, nbts, _, err = tl.Last()
-					if err != nil {
-						return
-					}
-				} else {
-					for range index {
-						c, nbts, _, _, err = tl.Next()
-						if err != nil {
-							return
-						}
-					}
-				}
-
-				err = w.SaveChunk(pos.Dimension, pos.ChunkPos, c)
-				if err != nil {
-					return
-				}
-				err = w.SaveNBT(pos.Dimension, pos.ChunkPos, nbts)
-				if err != nil {
-					return
-				}
-			}()
-			return nil
-		})
-		if err != nil {
-			return err
+		enumChunks := make([]define.DimChunk, 0)
+		for x := startX; x <= endX; x++ {
+			for z := startZ; z <= endZ; z++ {
+				enumChunks = append(enumChunks, define.DimChunk{
+					Dimension: operator_define.Dimension(*rangeDimension),
+					ChunkPos:  operator_define.ChunkPos{x, z},
+				})
+			}
 		}
 
-		waiter.Wait()
-		return nil
-	})
-	if err != nil {
-		log.Fatalln(err)
+		db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
+			countBytes := tx.Bucket(timeline.DatabaseKeyChunkIndex).Get(timeline.DatabaseKeyChunkCount)
+			if len(countBytes) < 4 {
+				countBytes = make([]byte, 4)
+			}
+			if binary.LittleEndian.Uint32(countBytes) < uint32(len(enumChunks)) {
+				shouldIterEntire = true
+			}
+			return nil
+		})
+
+		if shouldIterEntire {
+			IterRangeEntireDatabase(db, w, enumChunks, rangeDimension, providedUnixTime)
+		} else {
+			IterRange(db, w, enumChunks, rangeDimension, providedUnixTime)
+		}
+	} else {
+		IterEntireDatabase(db, w, providedUnixTime)
 	}
 
 	fmt.Println("ALL DOWN :)")
