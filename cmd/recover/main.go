@@ -54,7 +54,7 @@ func main() {
 	}()
 
 	err = db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(timeline.DatabaseChunkIndexKey)
+		bucket := tx.Bucket(timeline.DatabaseKeyChunkIndex)
 		waiter := new(sync.WaitGroup)
 
 		err = bucket.ForEach(func(k, v []byte) error {

@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	DatabaseRootKey       = []byte("root")
-	DatabaseChunkIndexKey = []byte("cik")
+	DatabaseKeyRoot       = []byte("root")
+	DatabaseKeyChunkIndex = []byte("chunk-index")
+	DatabaseKeyChunkCount = []byte("chunk-count")
 )
 
 // TimelineDB implements chunk timeline and
@@ -54,11 +55,16 @@ func Open(path string, noGrowSync bool, noSync bool) (result TimelineDatabase, e
 	}
 
 	err = db.Update(func(tx *bbolt.Tx) error {
-		if _, err = tx.CreateBucketIfNotExists(DatabaseRootKey); err != nil {
+		_, err = tx.CreateBucketIfNotExists(DatabaseKeyRoot)
+		if err != nil {
 			return err
 		}
-		if _, err = tx.CreateBucketIfNotExists(DatabaseChunkIndexKey); err != nil {
+		bucket, err := tx.CreateBucketIfNotExists(DatabaseKeyChunkIndex)
+		if err != nil {
 			return err
+		}
+		if len(bucket.Get(DatabaseKeyChunkCount)) < 4 {
+			return bucket.Put(DatabaseKeyChunkCount, make([]byte, 4))
 		}
 		return nil
 	})

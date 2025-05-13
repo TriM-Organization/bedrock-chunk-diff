@@ -10,7 +10,6 @@ import (
 	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
 	"github.com/TriM-Organization/bedrock-world-operator/block"
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
-	"go.etcd.io/bbolt"
 )
 
 // Save saves current timeline into the underlying database,
@@ -43,26 +42,41 @@ func (s *ChunkTimeline) Save() error {
 		return nil
 	}
 
-	transaction, err := s.db.OpenTransaction()
+	tran, err := s.db.OpenTransaction()
 	if err != nil {
-		return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
+		return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 	}
 	defer func() {
 		if !success {
-			_ = transaction.Discard()
+			_ = tran.Discard()
 			return
 		}
-		_ = transaction.Commit()
-		_ = s.db.(*database).bdb.Update(func(tx *bbolt.Tx) error {
-			return tx.Bucket(DatabaseChunkIndexKey).Put(
-				define.Index(s.pos),
-				[]byte{1},
-			)
-		})
+		_ = tran.Commit()
 		s.releaseFunc()
 	}()
 
 	globalData := bytes.NewBuffer(nil)
+
+	// Chunk Index
+	{
+		keyBytes := define.Index(s.pos)
+		bucket := tran.(*transaction).tx.Bucket(DatabaseKeyChunkIndex)
+
+		if bucket.Get(keyBytes) == nil {
+			err = bucket.Put(
+				DatabaseKeyChunkCount,
+				utils.Uint32BinaryAdd(bucket.Get(DatabaseKeyChunkCount), make([]byte, 4), 1),
+			)
+			if err != nil {
+				return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
+			}
+
+			err = bucket.Put(keyBytes, []byte{1})
+			if err != nil {
+				return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
+			}
+		}
+	}
 
 	// Timeline Unix Time
 	{
@@ -125,7 +139,7 @@ func (s *ChunkTimeline) Save() error {
 		if err != nil {
 			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
-		err = transaction.Put(
+		err = tran.Put(
 			define.Sum(s.pos, []byte(define.KeyChunkGlobalData)...),
 			gzipBytes,
 		)
@@ -141,7 +155,7 @@ func (s *ChunkTimeline) Save() error {
 			latestTimePointUnixTimeBytes,
 			uint64(s.timelineUnixTime[len(s.timelineUnixTime)-1]),
 		)
-		err = transaction.Put(
+		err = tran.Put(
 			define.Sum(s.pos, define.KeyLatestTimePointUnixTime),
 			latestTimePointUnixTimeBytes,
 		)
@@ -156,7 +170,7 @@ func (s *ChunkTimeline) Save() error {
 		if err != nil {
 			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
-		err = transaction.Put(
+		err = tran.Put(
 			define.Sum(s.pos, define.KeyLatestChunk),
 			payload,
 		)
@@ -171,7 +185,7 @@ func (s *ChunkTimeline) Save() error {
 		if err != nil {
 			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
-		err = transaction.Put(
+		err = tran.Put(
 			define.Sum(s.pos, []byte(define.KeyLatestNBT)...),
 			payload,
 		)

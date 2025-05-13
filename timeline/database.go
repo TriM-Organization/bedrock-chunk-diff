@@ -13,7 +13,7 @@ type database struct {
 // Has returns true if the DB does contains the given key.
 func (db *database) Has(key []byte) (has bool) {
 	db.bdb.View(func(tx *bbolt.Tx) error {
-		has = (tx.Bucket(DatabaseRootKey).Get(key) != nil)
+		has = (tx.Bucket(DatabaseKeyRoot).Get(key) != nil)
 		return nil
 	})
 	return
@@ -23,7 +23,7 @@ func (db *database) Has(key []byte) (has bool) {
 // Returns a nil value if the key does not exist or if the key is a nested bucket.
 func (db *database) Get(key []byte) (value []byte) {
 	db.bdb.View(func(tx *bbolt.Tx) error {
-		result := tx.Bucket(DatabaseRootKey).Get(key)
+		result := tx.Bucket(DatabaseKeyRoot).Get(key)
 		value = make([]byte, len(result))
 		copy(value, result)
 		return nil
@@ -36,7 +36,7 @@ func (db *database) Get(key []byte) (value []byte) {
 // Returns an error if the key is blank, if the key is too large, or if the value is too large.
 func (db *database) Put(key []byte, value []byte) (err error) {
 	return db.bdb.Update(func(tx *bbolt.Tx) error {
-		return tx.Bucket(DatabaseRootKey).Put(key, value)
+		return tx.Bucket(DatabaseKeyRoot).Put(key, value)
 	})
 }
 
@@ -44,7 +44,7 @@ func (db *database) Put(key []byte, value []byte) (err error) {
 // If the key does not exist then nothing is done and a nil error is returned.
 func (db *database) Delete(key []byte) error {
 	return db.bdb.Update(func(tx *bbolt.Tx) error {
-		return tx.Bucket(DatabaseRootKey).Delete(key)
+		return tx.Bucket(DatabaseKeyRoot).Delete(key)
 	})
 }
 
@@ -88,26 +88,26 @@ type transaction struct {
 
 // Has returns true if the DB does contains the given key.
 func (t *transaction) Has(key []byte) (has bool) {
-	return (t.tx.Bucket(DatabaseRootKey).Get(key) != nil)
+	return (t.tx.Bucket(DatabaseKeyRoot).Get(key) != nil)
 }
 
 // Get retrieves the value for a key in the bucket.
 // Returns a nil value if the key does not exist or if the key is a nested bucket.
 func (t *transaction) Get(key []byte) (value []byte) {
-	return t.tx.Bucket(DatabaseRootKey).Get(key)
+	return t.tx.Bucket(DatabaseKeyRoot).Get(key)
 }
 
 // Put sets the value for a key in the bucket.
 // If the key exist then its previous value will be overwritten.
 // Returns an error if the key is blank, if the key is too large, or if the value is too large.
 func (t *transaction) Put(key []byte, value []byte) error {
-	return t.tx.Bucket(DatabaseRootKey).Put(key, value)
+	return t.tx.Bucket(DatabaseKeyRoot).Put(key, value)
 }
 
 // Delete removes a key from the bucket.
 // If the key does not exist then nothing is done and a nil error is returned.
 func (t *transaction) Delete(key []byte) error {
-	return t.tx.Bucket(DatabaseRootKey).Delete(key)
+	return t.tx.Bucket(DatabaseKeyRoot).Delete(key)
 }
 
 // Commit writes all changes to disk, updates the meta page and closes the transaction.

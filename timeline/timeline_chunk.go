@@ -98,7 +98,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 	}
 
 	err = t.DB.(*database).bdb.View(func(tx *bbolt.Tx) error {
-		exist = (tx.Bucket(DatabaseChunkIndexKey).Get(define.Index(pos)) != nil)
+		exist = (tx.Bucket(DatabaseKeyChunkIndex).Get(define.Index(pos)) != nil)
 		return nil
 	})
 	if err != nil {
@@ -215,51 +215,64 @@ func (t *TimelineDB) DeleteChunkTimeline(pos define.DimChunk) error {
 		return nil
 	}
 
-	transaction, err := t.OpenTransaction()
+	tran, err := t.OpenTransaction()
 	if err != nil {
 		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 	defer func() {
 		if !success {
-			_ = transaction.Discard()
+			_ = tran.Discard()
 			return
 		}
-		_ = transaction.Commit()
+		_ = tran.Commit()
 	}()
 
 	// Global data
-	err = transaction.Delete(define.Sum(pos, []byte(define.KeyChunkGlobalData)...))
+	err = tran.Delete(define.Sum(pos, []byte(define.KeyChunkGlobalData)...))
 	if err != nil {
 		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 
 	// Chunk Index
-	err = t.DB.(*database).bdb.Update(func(tx *bbolt.Tx) error {
-		return tx.Bucket(DatabaseChunkIndexKey).Delete(define.Index(pos))
-	})
+	keyBytes := define.Index(pos)
+	bucket := tran.(*transaction).tx.Bucket(DatabaseKeyChunkIndex)
+	if bucket.Get(keyBytes) != nil {
+		err = bucket.Put(
+			DatabaseKeyChunkCount,
+			utils.Uint32BinaryAdd(bucket.Get(DatabaseKeyChunkCount), []byte{1, 0, 0, 0}, -1),
+		)
+		if err != nil {
+			return fmt.Errorf("DeleteChunkTimeline: %v", err)
+		}
+		err = bucket.Delete(keyBytes)
+		if err != nil {
+			return fmt.Errorf("DeleteChunkTimeline: %v", err)
+		}
+	}
+
 	if err != nil {
 		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 
 	// Latest Chunk
-	err = transaction.Delete(define.Sum(pos, define.KeyLatestChunk))
+	err = tran.Delete(define.Sum(pos, define.KeyLatestChunk))
 	if err != nil {
 		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 
 	// Latest NBT
-	err = transaction.Delete(define.Sum(pos, []byte(define.KeyLatestNBT)...))
+	err = tran.Delete(define.Sum(pos, []byte(define.KeyLatestNBT)...))
 	if err != nil {
 		return fmt.Errorf("DeleteChunkTimeline: %v", err)
 	}
 
 	// Each delta update
 	for i := timeline.barrierLeft; i <= timeline.barrierRight; i++ {
-		err = transaction.Delete(define.IndexBlockDu(pos, i))
+		err = tran.Delete(define.IndexBlockDu(pos, i))
 		if err != nil {
 			return fmt.Errorf("DeleteChunkTimeline: %v", err)
 		}
-		err = transaction.Delete(define.IndexNBTDu(pos, i))
+		err = tran.Delete(define.IndexNBTDu(pos, i))
 		if err != nil {
 			return fmt.Errorf("DeleteChunkTimeline: %v", err)
 		}
