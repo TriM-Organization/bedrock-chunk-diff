@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"maps"
+	"reflect"
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
 	"github.com/cespare/xxhash/v2"
@@ -199,7 +199,7 @@ func NBTDifference(older []NBTWithIndex, newer []NBTWithIndex) (result *Multiple
 			continue
 		}
 
-		if maps.Equal(value.NBT, newerSet[key].NBT) {
+		if reflect.DeepEqual(value.NBT, newerSet[key].NBT) {
 			continue
 		}
 
