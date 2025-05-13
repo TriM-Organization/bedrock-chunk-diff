@@ -88,7 +88,7 @@ func main() {
 			}
 		}
 
-		db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
+		err = db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
 			countBytes := tx.Bucket(timeline.DatabaseKeyChunkIndex).Get(timeline.DatabaseKeyChunkCount)
 			if len(countBytes) < 4 {
 				countBytes = make([]byte, 4)
@@ -98,6 +98,9 @@ func main() {
 			}
 			return nil
 		})
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		if shouldIterEntire {
 			IterRangeEntireDatabase(db, w, enumChunks, *rangeDimension, *providedUnixTime)
