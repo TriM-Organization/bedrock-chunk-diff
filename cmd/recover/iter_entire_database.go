@@ -23,7 +23,7 @@ func IterEntireDatabase(
 	counter := 0
 	defer func() {
 		fmt.Println("Time used:", time.Since(startTime))
-		fmt.Println("Find chunks:", counter)
+		fmt.Println("Found chunks:", counter)
 	}()
 
 	err := db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {

@@ -25,7 +25,7 @@ func IterRangeEntireDatabase(
 	counter := 0
 	defer func() {
 		fmt.Println("Time used:", time.Since(startTime))
-		fmt.Println("Find chunks:", counter)
+		fmt.Println("Found chunks:", counter)
 	}()
 
 	mapping := make(map[define.DimChunk]bool)
