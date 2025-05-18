@@ -57,7 +57,7 @@ Additionally, we finally used a single file as the [database](https://github.com
 
 See [research document](./doc/Sub%20Chunk%20Delta%20Update%20Implements%20Disscussion.pdf) to learn our research study essay.<br/>
 Note that this research is talk about the sub chunk delta update, but not the chunks.<br/>
-The reason we use chunk but sub chunk is sub chunk will take too much time to do delta update, and it is not our expected.
+The reason why we use chunk but not sub chunk is sub chunk will take too much time to do delta update, and it is not our expected.
 
 
 
