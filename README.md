@@ -29,6 +29,7 @@
   - [Upstream](#upstream)
   - [Supported OS and architecture](#supported-os-and-architecture)
   - [Features](#features)
+  - [Recover](#recover)
 - [Compatibility](#compatibility)
 - [Get started quickly](#get-started-quickly)
 - [Note](#note)
@@ -97,6 +98,13 @@ By reference [this file](./python/package/internal/load_dynamic_library.py) to k
 - [ ] Delta update for lodestone data (Not planned to support, but welcome to open **Pull Request**)
 - [ ] Delta update for player data (Not planned to support, but welcome to open **Pull Request**)
 - [ ] Delta update for mob data in game saves (Not planned to support, but welcome to open **Pull Request**)
+
+
+
+## Recover
+To use the database to back to a specific timeline for each chunk and generated a available Minecraft game save, use [this](./cmd/recover) tools to help you.
+
+Also, you can reference these codes to write your own ones, and welcome to contribute more tool for this project.
 
 
 
