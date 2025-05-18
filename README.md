@@ -55,6 +55,7 @@ Therefore, we just need to track the chunks that player loaded, so this package 
 Additionally, we finally used a single file as the [database](https://github.com/etcd-io/bbolt), so it's very easy for you to backup the timeline database, just copy one is ok...
 
 See [research document](./doc/Sub%20Chunk%20Delta%20Update%20Implements%20Disscussion.pdf) to learn our research study essay.
+Note that this research is talk about the sub chunk delta update, but not the chunks. The reason we use chunk but sub chunk is sub chunk will take too much time to do delta update, and it is not our expected.
 
 
 
