@@ -89,9 +89,12 @@ By reference [this file](./python/package/internal/load_dynamic_library.py) to k
 
 
 ## Features
-[x] Delta update for blocks in chunk
-[x] Delta update for NBT data in chunk
-[] Delta update for mob data in game saves (Not planned to support, but welcome to open **Pull Request**)
+- [x] Delta update for blocks in chunk
+- [x] Delta update for NBT data in chunk
+- [ ] Delta update for map pixel data (Not planned to support, but welcome to open **Pull Request**)
+- [ ] Delta update for lodestone data (Not planned to support, but welcome to open **Pull Request**)
+- [ ] Delta update for player data (Not planned to support, but welcome to open **Pull Request**)
+- [ ] Delta update for mob data in game saves (Not planned to support, but welcome to open **Pull Request**)
 
 
 
