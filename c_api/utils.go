@@ -75,17 +75,14 @@ func packNBTs(nbts []map[string]any) (payload []byte, err error) {
 }
 
 func unpackNBTs(payload []byte) (nbts []map[string]any, err error) {
-	for len(payload) > 0 {
+	buf := bytes.NewBuffer(payload)
+	for buf.Len() > 0 {
 		var m map[string]any
-		length := binary.LittleEndian.Uint32(payload)
-
-		err := nbt.NewDecoderWithEncoding(bytes.NewBuffer(payload[4:length+4]), nbt.LittleEndian).Decode(&m)
+		err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&m)
 		if err != nil {
 			return nil, fmt.Errorf("AppendDiskChunk: %v", err)
 		}
 		nbts = append(nbts, m)
-
-		payload = payload[length+4:]
 	}
 	return
 }

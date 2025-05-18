@@ -47,7 +47,7 @@ def ctl_append_disk_chunk(
         LIB.AppendDiskChunk(
             CLongLong(id),
             as_c_bytes(pack_bytes_list(chunk_payload)),
-            as_c_bytes(pack_bytes_list(nbt_payload)),
+            as_c_bytes(b"".join(nbt_payload)),
             CInt(range_start),
             CInt(range_end),
         )
@@ -65,7 +65,7 @@ def ctl_append_network_chunk(
         LIB.AppendNetworkChunk(
             CLongLong(id),
             as_c_bytes(pack_bytes_list(chunk_payload)),
-            as_c_bytes(pack_bytes_list(nbt_payload)),
+            as_c_bytes(b"".join(nbt_payload)),
             CInt(range_start),
             CInt(range_end),
         )
