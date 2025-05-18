@@ -16,7 +16,7 @@ func FromChunkPayload(subChunks [][]byte, r define.Range, e chunk.Encoding) (c *
 	for index, value := range subChunks {
 		subChunk, _, err := chunk.DecodeSubChunk(bytes.NewBuffer(value), r, e)
 		if err != nil {
-			return nil, fmt.Errorf("FromDiskChunkPayload: %v", err)
+			return nil, fmt.Errorf("FromChunkPayload: %v", err)
 		}
 		c.SetSubChunk(subChunk, int16(index))
 	}
