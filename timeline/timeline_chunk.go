@@ -198,7 +198,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 	return result, nil
 }
 
-// DeleteChunkTimeline delete the timeline of chunk who at pos.
+// DeleteChunkTimeline deletes the timeline of chunk who at pos.
 // If timeline is not exist, then do no operation.
 //
 // Time complexity: O(n).

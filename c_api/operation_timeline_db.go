@@ -20,6 +20,11 @@ func NewTimelineDB(path *C.char, noGrowSync C.int, noSync C.int) C.longlong {
 	return C.longlong(savedTimelineDB.AddObject(tldb))
 }
 
+//export ReleaseTimelineDB
+func ReleaseTimelineDB(id C.longlong) {
+	savedTimelineDB.ReleaseObject(int(id))
+}
+
 //export CloseTimelineDB
 func CloseTimelineDB(id C.longlong) *C.char {
 	tldb := savedTimelineDB.LoadObject(int(id))
@@ -54,6 +59,11 @@ func NewChunkTimeline(id C.longlong, dm C.int, chunkPosX C.int, chunkPosZ C.int,
 	}
 
 	return C.longlong(savedChunkTimeline.AddObject(result))
+}
+
+//export ReleaseChunkTimeline
+func ReleaseChunkTimeline(id C.longlong) {
+	savedChunkTimeline.ReleaseObject(int(id))
 }
 
 //export DeleteChunkTimeline

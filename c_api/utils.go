@@ -35,31 +35,6 @@ func asGoBytes(p *C.char) []byte {
 	return C.GoBytes(unsafe.Pointer(p), C.int(4+l))[4:]
 }
 
-func unpackChunks(payload []byte) (subChunks [][]byte) {
-	for len(payload) > 0 {
-		length := binary.LittleEndian.Uint32(payload)
-		subChunks = append(subChunks, payload[4:length+4])
-		payload = payload[length+4:]
-	}
-	return
-}
-
-func unpackNBTs(payload []byte) (nbts []map[string]any, err error) {
-	for len(payload) > 0 {
-		var m map[string]any
-		length := binary.LittleEndian.Uint32(payload)
-
-		err := nbt.NewDecoderWithEncoding(bytes.NewBuffer(payload[4:length+4]), nbt.LittleEndian).Decode(&m)
-		if err != nil {
-			return nil, fmt.Errorf("AppendDiskChunk: %v", err)
-		}
-		nbts = append(nbts, m)
-
-		payload = payload[length+4:]
-	}
-	return
-}
-
 func packChunks(subChunks [][]byte) []byte {
 	buf := bytes.NewBuffer(nil)
 	for _, value := range subChunks {
@@ -69,6 +44,15 @@ func packChunks(subChunks [][]byte) []byte {
 		buf.Write(value)
 	}
 	return buf.Bytes()
+}
+
+func unpackChunks(payload []byte) (subChunks [][]byte) {
+	for len(payload) > 0 {
+		length := binary.LittleEndian.Uint32(payload)
+		subChunks = append(subChunks, payload[4:length+4])
+		payload = payload[length+4:]
+	}
+	return
 }
 
 func packNBTs(nbts []map[string]any) (payload []byte, err error) {
@@ -88,6 +72,22 @@ func packNBTs(nbts []map[string]any) (payload []byte, err error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func unpackNBTs(payload []byte) (nbts []map[string]any, err error) {
+	for len(payload) > 0 {
+		var m map[string]any
+		length := binary.LittleEndian.Uint32(payload)
+
+		err := nbt.NewDecoderWithEncoding(bytes.NewBuffer(payload[4:length+4]), nbt.LittleEndian).Decode(&m)
+		if err != nil {
+			return nil, fmt.Errorf("AppendDiskChunk: %v", err)
+		}
+		nbts = append(nbts, m)
+
+		payload = payload[length+4:]
+	}
+	return
 }
 
 func packNextOrLast(

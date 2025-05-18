@@ -14,7 +14,7 @@ var (
 )
 
 // TimelineDB implements chunk timeline and
-// history record provider based on LevelDB.
+// history record provider based on bbolt.
 type TimelineDB struct {
 	DB
 	sessions *InProgressSession
