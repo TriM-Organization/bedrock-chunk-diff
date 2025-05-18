@@ -1,2 +1,2 @@
 numpy
-bedrockworldoperator
+bedrock-world-operator
