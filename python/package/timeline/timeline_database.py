@@ -169,7 +169,7 @@ class TimelineDatabase:
 
 
 def new_timeline_database(
-    path: str, no_grow_sync: bool, no_sync: bool
+    path: str, no_grow_sync: bool = False, no_sync: bool = False
 ) -> TimelineDatabase:
     """
     new_timeline_database open a level database that used for
@@ -182,17 +182,19 @@ def new_timeline_database(
 
     Args:
         path (str): The path of the timeline database want to open or create.
-        no_grow_sync (bool): When no_grow_sync is true, skips the truncate call when growing the database.
+        no_grow_sync (bool, optional): When no_grow_sync is true, skips the truncate call when growing the database.
                              Setting this to true is only safe on non-ext3/ext4 systems.
                              Skipping truncation avoids preallocation of hard drive space and
                              bypasses a truncate() and fsync() syscall on remapping.
                                 - See also: https://github.com/boltdb/bolt/issues/284
-        no_sync (bool): Setting the no_sync flag will cause the database to skip fsync()
+                            Defaults to False.
+        no_sync (bool, optional): Setting the no_sync flag will cause the database to skip fsync()
                         calls after each commit. This can be useful when bulk loading data
                         into a database and you can restart the bulk load in the event of
                         a system failure or database corruption. Do not set this flag for
                         normal use.
                         THIS IS UNSAFE. PLEASE USE WITH CAUTION.
+                        Defaults to False.
 
     Returns:
         TimelineDatabase: The opened timeline database.
