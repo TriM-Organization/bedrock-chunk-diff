@@ -14,8 +14,8 @@ import (
 
 var savedChunkTimeline = NewSimpleManager[*timeline.ChunkTimeline]()
 
-// append ..
-func append(
+// appendChunk ..
+func appendChunk(
 	id C.longlong,
 	chunkPayload *C.char, nbtPayload *C.char,
 	rangeStart C.int, rangeEnd C.int,
@@ -43,12 +43,12 @@ func append(
 
 //export AppendDiskChunk
 func AppendDiskChunk(id C.longlong, chunkPayload *C.char, nbtPayload *C.char, rangeStart C.int, rangeEnd C.int) *C.char {
-	return append(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, chunk.DiskEncoding)
+	return appendChunk(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, chunk.DiskEncoding)
 }
 
 //export AppendNetworkChunk
 func AppendNetworkChunk(id C.longlong, chunkPayload *C.char, nbtPayload *C.char, rangeStart C.int, rangeEnd C.int) *C.char {
-	return append(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, chunk.NetworkEncoding)
+	return appendChunk(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, chunk.NetworkEncoding)
 }
 
 //export Empty
