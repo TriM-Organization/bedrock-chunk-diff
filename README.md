@@ -74,7 +74,7 @@ Additionally, **bedrock-world-operator** only support the standard Minecraft blo
 Due to **Bedrock Chunk Diff** is based on **Go**, so we pre-built some dynamic library.
 
 However, maybe some of the systems or architectures are not supportted.
-Therefore, if needed, welcome to open new **ISSUE** or **Pull Request**,
+Therefore, if needed, welcome to open new **ISSUE** or **Pull Request**.
 
 - Windows
     * x86_64/amd64
