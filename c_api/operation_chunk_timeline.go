@@ -14,48 +14,41 @@ import (
 
 var savedChunkTimeline = NewSimpleManager[*timeline.ChunkTimeline]()
 
-//export AppendDiskChunk
-func AppendDiskChunk(id C.longlong, chunkPayload *C.char, nbtPayload *C.char, rangeStart C.int, rangeEnd C.int) *C.char {
+// append ..
+func append(
+	id C.longlong,
+	chunkPayload *C.char, nbtPayload *C.char,
+	rangeStart C.int, rangeEnd C.int,
+	e chunk.Encoding,
+) *C.char {
 	subChunks := unpackChunks(asGoBytes(chunkPayload))
 	nbts, err := unpackNBTs(asGoBytes(nbtPayload))
 	if err != nil {
-		return C.CString(fmt.Sprintf("AppendDiskChunk: %v", err))
+		return C.CString(fmt.Sprintf("append: %v", err))
 	}
 
-	c, err := utils.FromDiskChunkPayload(subChunks, define.Range{int(rangeStart), int(rangeEnd)})
+	c, err := utils.FromChunkPayload(subChunks, define.Range{int(rangeStart), int(rangeEnd)}, e)
 	if err != nil {
-		return C.CString(fmt.Sprintf("AppendDiskChunk: %v", err))
+		return C.CString(fmt.Sprintf("append: %v", err))
 	}
 
 	ctl := savedChunkTimeline.LoadObject(int(id))
 	if ctl == nil {
-		return C.CString("AppendDiskChunk: Chunk timeline not found")
+		return C.CString("append: Chunk timeline not found")
 	}
 
 	(*ctl).Append(c, nbts)
 	return C.CString("")
 }
 
+//export AppendDiskChunk
+func AppendDiskChunk(id C.longlong, chunkPayload *C.char, nbtPayload *C.char, rangeStart C.int, rangeEnd C.int) *C.char {
+	return append(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, chunk.DiskEncoding)
+}
+
 //export AppendNetworkChunk
 func AppendNetworkChunk(id C.longlong, chunkPayload *C.char, nbtPayload *C.char, rangeStart C.int, rangeEnd C.int) *C.char {
-	subChunks := unpackChunks(asGoBytes(chunkPayload))
-	nbts, err := unpackNBTs(asGoBytes(nbtPayload))
-	if err != nil {
-		return C.CString(fmt.Sprintf("AppendNetworkChunk: %v", err))
-	}
-
-	c, err := utils.FromNetworkChunkPayload(subChunks, define.Range{int(rangeStart), int(rangeEnd)})
-	if err != nil {
-		return C.CString(fmt.Sprintf("AppendNetworkChunk: %v", err))
-	}
-
-	ctl := savedChunkTimeline.LoadObject(int(id))
-	if ctl == nil {
-		return C.CString("AppendNetworkChunk: Chunk timeline not found")
-	}
-
-	(*ctl).Append(c, nbts)
-	return C.CString("")
+	return append(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, chunk.NetworkEncoding)
 }
 
 //export Empty

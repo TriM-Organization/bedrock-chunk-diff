@@ -9,28 +9,16 @@ import (
 	"github.com/TriM-Organization/bedrock-world-operator/define"
 )
 
-// FromDiskChunkPayload ..
-func FromDiskChunkPayload(subChunks [][]byte, r define.Range) (c *chunk.Chunk, err error) {
-	c, err = chunk.DiskDecode(chunk.SerialisedData{
-		SubChunks: subChunks,
-		Biomes:    nil,
-	}, r)
-	if err != nil {
-		return nil, fmt.Errorf("FromDiskChunkPayload: %v", err)
-	}
-	return
-}
+// FromChunkPayload ..
+func FromChunkPayload(subChunks [][]byte, r define.Range, e chunk.Encoding) (c *chunk.Chunk, err error) {
+	c = chunk.NewChunk(block.AirRuntimeID, r)
 
-// FromNetworkChunkPayload ..
-func FromNetworkChunkPayload(subChunks [][]byte, r define.Range) (c *chunk.Chunk, err error) {
-	buf := bytes.NewBuffer(nil)
-	for _, value := range subChunks {
-		buf.Write(value)
-	}
-
-	c, err = chunk.NetworkDecode(block.AirRuntimeID, buf.Bytes(), len(subChunks), r)
-	if err != nil {
-		return nil, fmt.Errorf("FromNetworkChunkPayload: %v", err)
+	for index, value := range subChunks {
+		subChunk, _, err := chunk.DecodeSubChunk(bytes.NewBuffer(value), r, e)
+		if err != nil {
+			return nil, fmt.Errorf("FromDiskChunkPayload: %v", err)
+		}
+		c.SetSubChunk(subChunk, int16(index))
 	}
 
 	return
