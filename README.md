@@ -54,7 +54,7 @@ Therefore, we just need to track the chunks that player loaded, so this package 
 
 Additionally, we finally used a single file as the [database](https://github.com/etcd-io/bbolt), so it's very easy for you to backup the timeline database, just copy one is ok...
 
-See [research document](./doc/Sub%20Chunk%20Delta%20Update%20Implements%20Disscussion.pdf) see our research study essay.
+See [research document](./doc/Sub%20Chunk%20Delta%20Update%20Implements%20Disscussion.pdf) to learn our research study essay.
 
 
 
