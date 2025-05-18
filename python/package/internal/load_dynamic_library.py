@@ -28,34 +28,34 @@ match system:
     case "windows":
         if format_arch == "amd64":
             LIB = ctypes.cdll.LoadLibrary(
-                os.path.join(lib_path, "bedrock-world-operator_windows_amd64.dll")
+                os.path.join(lib_path, "bedrock-chunk-diff_windows_amd64.dll")
             )
         elif format_arch == "x86":
             LIB = ctypes.cdll.LoadLibrary(
-                os.path.join(lib_path, "bedrock-world-operator_windows_x86.dll")
+                os.path.join(lib_path, "bedrock-chunk-diff_windows_x86.dll")
             )
     case "darwin":
         if format_arch == "amd64":
             LIB = ctypes.cdll.LoadLibrary(
-                os.path.join(lib_path, "bedrock-world-operator_macos_amd64.dylib")
+                os.path.join(lib_path, "bedrock-chunk-diff_macos_amd64.dylib")
             )
         elif format_arch == "arm64":
             LIB = ctypes.cdll.LoadLibrary(
-                os.path.join(lib_path, "bedrock-world-operator_macos_arm64.dylib")
+                os.path.join(lib_path, "bedrock-chunk-diff_macos_arm64.dylib")
             )
     case _:
         if format_arch == "amd64":
             LIB = ctypes.cdll.LoadLibrary(
-                os.path.join(lib_path, "bedrock-world-operator_linux_amd64.so")
+                os.path.join(lib_path, "bedrock-chunk-diff_linux_amd64.so")
             )
         elif format_arch == "arm64":
             if arch == "aarch64":
                 LIB = ctypes.cdll.LoadLibrary(
-                    os.path.join(lib_path, "bedrock-world-operator_android_arm64.so")
+                    os.path.join(lib_path, "bedrock-chunk-diff_android_arm64.so")
                 )
             else:
                 LIB = ctypes.cdll.LoadLibrary(
-                    os.path.join(lib_path, "bedrock-world-operator_linux_arm64.so")
+                    os.path.join(lib_path, "bedrock-chunk-diff_linux_arm64.so")
                 )
 
 if LIB is None:
