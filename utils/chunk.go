@@ -13,8 +13,8 @@ import (
 func FromChunkPayload(subChunks [][]byte, r define.Range, e chunk.Encoding) (c *chunk.Chunk, err error) {
 	c = chunk.NewChunk(block.AirRuntimeID, r)
 
-	for index, value := range subChunks {
-		subChunk, _, err := chunk.DecodeSubChunk(bytes.NewBuffer(value), r, e)
+	for _, value := range subChunks {
+		subChunk, index, err := chunk.DecodeSubChunk(bytes.NewBuffer(value), r, e)
 		if err != nil {
 			return nil, fmt.Errorf("FromChunkPayload: %v", err)
 		}
