@@ -141,7 +141,7 @@ But we most suggest you study on `c_api` and `timeline` folder first, because th
 # 🐍 Pypi Package
 This package **bedrock-world-operator** is been uploaded to **Pypi** ，and you can use `pip install bedrock-chunk-diff` to install.
 
-See [📦 bedrock-chunk-diff on Pypi](https://pypi.org/project/bedrock-world-operator) to learn more.
+See [📦 bedrock-chunk-diff on Pypi](https://pypi.org/project/bedrock-chunk-diff) to learn more.
 
 We used **CD/CI Github Actions**, so if you are the collaborator of this project, you can trigger the workflows by change **version** or use your hand. Then, the robot will compile this project and upload it to **Pypi**.
 
