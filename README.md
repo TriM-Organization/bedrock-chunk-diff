@@ -50,14 +50,18 @@
 The finest granularity of delta update is the Chunk.
 That means, the user is easily (and also very fast) to record the time point for the Minecraft game saves when the server is running.
 
-So, for a chunk that not loaded, they will nerver to get update, then their is no newer time point to be created.
+So, for a chunk that not loaded, they will nerver get update, then their is no newer time point to be created.
 Therefore, we just need to track the chunks that player loaded, so this package provided a very useful delta update implements.
 
-Additionally, we finally used a single file as the [database](https://github.com/etcd-io/bbolt), so it's very easy for you to backup the timeline database, just copy one is ok...
+Additionally, we finally used [single file database](https://github.com/etcd-io/bbolt) to record everything, so it's very easy for you to backup the timeline database, just copy one file is OK.
 
 See [research document](./doc/Sub%20Chunk%20Delta%20Update%20Implements%20Disscussion.pdf) to learn our research study essay.<br/>
 Note that this research is talk about the sub chunk delta update, but not the chunks.<br/>
 The reason why we use chunk but not sub chunk is sub chunk will take too much time to do delta update, and it is not our expected.
+
+Different to [CoreProtect](https://github.com/PlayPro/CoreProtect), this package is not used for track the single block changes. That means, each time you append a new time point of a chunk to the timeline of this chunk, we are actually creating a snapshot of this chunk. Create snapshot is very helpful for backup the Minecraft game saves, bot not helpful to track the player actions. So, this package is satisfied with large block changes in a single chunk.
+
+
 
 
 
@@ -102,7 +106,7 @@ By reference [this file](./python/package/internal/load_dynamic_library.py) to k
 
 
 ## Recover
-To use the database to back to a specific timeline for each chunk and generated a available Minecraft game save, use [this](./cmd/recover) tools to help you.
+To use the database to back to a specific time point for each chunk and generated a available Minecraft game save, use [this](./cmd/recover) tools to help you.
 
 Note that we pre-built this tool for some of operating system, and please see [Release](https://github.com/TriM-Organization/bedrock-chunk-diff/releases) for more information.
 
