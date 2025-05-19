@@ -1,0 +1,57 @@
+name: Build Recover Tool
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "cmd/recover/version"
+  workflow_dispatch: {}
+
+jobs:
+  Builder:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Check Should Build Recover Tool
+      id: test_should_build_recover_tool
+      run: |
+        cp .github/workflows/test_should_build_recover_tool.sh ./
+        sh test_should_build_recover_tool.sh
+        rm -rf test_should_build_recover_tool.sh
+      
+    - name: Build
+      if: steps.test_should_build_recover_tool.outputs.result == 'true'
+      run: |
+        mkdir release
+        cd cmd/recover
+        GOOS=linux GOARCH=aarch64 go build -ldflags "-s -w" -o ../../release/recover_android_arm64
+        GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_linux_amd64
+        GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_linux_arm64
+        GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_macos_amd64
+        GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_macos_arm64
+        GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_windows_amd64.exe
+        GOOS=windows GOARCH=386 go build -ldflags "-s -w" -o ../../release/recover_windows_x86.exe
+    
+    - name: Version Getter
+      if: steps.test_should_build_recover_tool.outputs.result == 'true'
+      id: get_version
+      run: |
+        echo "name=v$(awk 'NR==1' version)" >> $GITHUB_OUTPUT
+      
+    - name: Commit Name Getter
+      if: steps.test_should_build_recover_tool.outputs.result == 'true'
+      id: get_commit_title
+      run: |
+        TITLE=$(git log -1 --pretty=%s)
+        echo "title=$TITLE" >> $GITHUB_OUTPUT
+        
+    - name: Release
+      if: steps.test_should_build_recover_tool.outputs.result == 'true'
+      uses: softprops/action-gh-release@v2
+      with:
+          tag_name: ${{ steps.get_version.outputs.name }}
+          body: ${{ steps.get_commit_title.outputs.title }}
+          files: ./release/*
