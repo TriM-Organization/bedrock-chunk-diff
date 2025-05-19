@@ -104,7 +104,9 @@ By reference [this file](./python/package/internal/load_dynamic_library.py) to k
 ## Recover
 To use the database to back to a specific timeline for each chunk and generated a available Minecraft game save, use [this](./cmd/recover) tools to help you.
 
-Also, you can reference these codes to write your own ones, and welcome to contribute more tool for this project.
+Note that we pre-built this tool for some of operating system, and please see [Release](https://github.com/TriM-Organization/bedrock-chunk-diff/releases) for more information.
+
+Additionally, you can reference these codes to write your own ones, and welcome to contribute more tool for this project.
 
 
 
