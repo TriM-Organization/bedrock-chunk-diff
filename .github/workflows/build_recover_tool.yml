@@ -27,13 +27,14 @@ jobs:
       run: |
         mkdir release
         cd cmd/recover
-        GOOS=android GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_android_arm64
-        GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_linux_amd64
-        GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_linux_arm64
-        GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_macos_amd64
-        GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_macos_arm64
-        GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_windows_amd64.exe
-        GOOS=windows GOARCH=386 go build -ldflags "-s -w" -o ../../release/recover_windows_x86.exe
+        echo $(GOOS=android GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_android_arm64)
+        echo $(GOOS=android GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_android_arm64)
+        echo $(GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_linux_amd64)
+        echo $(GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_linux_arm64)
+        echo $(GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_macos_amd64)
+        echo $(GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w" -o ../../release/recover_macos_arm64)
+        echo $(GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ../../release/recover_windows_amd64.exe)
+        echo $(GOOS=windows GOARCH=386 go build -ldflags "-s -w" -o ../../release/recover_windows_x86.exe)
     
     - name: Version Getter
       if: steps.test_should_build_recover_tool.outputs.result == 'true'
