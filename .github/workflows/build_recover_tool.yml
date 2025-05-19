@@ -39,7 +39,7 @@ jobs:
       if: steps.test_should_build_recover_tool.outputs.result == 'true'
       id: get_version
       run: |
-        echo "name=v$(awk 'NR==1' version)" >> $GITHUB_OUTPUT
+        echo "name=v$(awk 'NR==1' cmd/recover/version)" >> $GITHUB_OUTPUT
       
     - name: Commit Name Getter
       if: steps.test_should_build_recover_tool.outputs.result == 'true'
