@@ -117,7 +117,8 @@ func (s *ChunkTimeline) convert(
 // Note that if Next returned non-nil error, then the underlying pointer will back to the
 // firest time point due to when an error occurs, some of the underlying data maybe is inconsistent.
 //
-// Time complexity: O(4096+C).
+// Time complexity: O(4096×n + C).
+// n is the sub chunk count of this chunk.
 // C is relevant to the average changes between last time point and the next one.
 func (s *ChunkTimeline) Next() (
 	c *chunk.Chunk, nbts []map[string]any, updateUnixTime int64,
@@ -145,9 +146,10 @@ func (s *ChunkTimeline) Next() (
 // to the firest time point due to when an error occurs, some of the underlying data
 // maybe is inconsistent.
 //
-// Time complexity: O(4096 + C×(n+1)).
-// n is the distance between index and current pointer,
-// C is relevant to the average changes of all these time point.
+// Time complexity: O(4096×n + C×(d+1)).
+//   - n is the sub chunk count of this chunk.
+//   - d is the distance between index and current pointer,
+//   - C is relevant to the average changes of all these time point.
 func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]any, updateUnixTime int64, err error) {
 	var oriChunk define.ChunkMatrix
 	var oriNBTs []define.NBTWithIndex
@@ -176,7 +178,8 @@ func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]an
 }
 
 // Last gets the latest time point of current chunk and the NBT blocks in it.
-// Time complexity: O(4096).
+// Time complexity: O(4096×n).
+// n is the sub chunk count of this chunk.
 func (s *ChunkTimeline) Last() (
 	c *chunk.Chunk,
 	nbts []map[string]any,
