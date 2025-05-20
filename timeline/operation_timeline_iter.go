@@ -16,7 +16,7 @@ func (s *ChunkTimeline) next() (
 	isLastElement bool, err error,
 ) {
 	if s.isEmpty {
-		return nil, nil, 0, false, nil
+		return nil, nil, 0, false, fmt.Errorf("next: Current chunk timeline is empty")
 	}
 	isLastElement = (s.ptr == s.barrierRight)
 
@@ -153,6 +153,10 @@ func (s *ChunkTimeline) Next() (
 func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]any, updateUnixTime int64, err error) {
 	var oriChunk define.ChunkMatrix
 	var oriNBTs []define.NBTWithIndex
+
+	if s.isEmpty {
+		return nil, nil, 0, fmt.Errorf("JumpTo: Current chunk timeline is empty")
+	}
 
 	idx := s.barrierLeft + index
 	if idx > s.barrierRight {
