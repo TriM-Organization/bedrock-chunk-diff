@@ -55,10 +55,6 @@ Therefore, we just need to track the chunks that player loaded, so this package 
 
 Additionally, we finally used [single file database](https://github.com/etcd-io/bbolt) to record everything, so it's very easy for you to backup the timeline database, just copy one file is OK.
 
-See [research document](./doc/Sub%20Chunk%20Delta%20Update%20Implements%20Disscussion.pdf) to learn our research study essay.<br/>
-Note that this research is talk about the sub chunk delta update, but not the chunks.<br/>
-The reason why we use chunk but not sub chunk is sub chunk will take too much time to do delta update, and it is not our expected.
-
 Different to [CoreProtect](https://github.com/PlayPro/CoreProtect), this package is not used for track the single block changes. That means, each time you append a new time point of a chunk to the timeline of this chunk, we are actually creating a snapshot of this chunk. Create snapshot is very helpful for backup the Minecraft game saves, bot not helpful to track the player actions. So, this package is satisfied with large block changes in a single chunk.
 
 
