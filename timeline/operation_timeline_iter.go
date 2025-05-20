@@ -74,9 +74,9 @@ func (s *ChunkTimeline) convert(
 	c = chunk.NewChunk(block.AirRuntimeID, s.pos.Dimension.Range())
 	sub := c.Sub()
 	for ChunkIndex, layers := range oriChunk {
-		sub := sub[ChunkIndex]
+		subChunk := sub[ChunkIndex]
 		for index, value := range layers {
-			layer := sub.Layer(uint8(index))
+			layer := subChunk.Layer(uint8(index))
 
 			if define.BlockMatrixIsEmpty(value) {
 				continue
