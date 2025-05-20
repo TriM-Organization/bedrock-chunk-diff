@@ -45,7 +45,6 @@ def unpack_next_or_last(
     is_last_element = False
     if read_is_last_element:
         is_last_element = bool(int(r.read(1)))
-            sub_chunks,
 
     return (
         sub_chunks,
