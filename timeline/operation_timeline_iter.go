@@ -145,8 +145,8 @@ func (s *ChunkTimeline) Next() (
 // to the firest time point due to when an error occurs, some of the underlying data
 // maybe is inconsistent.
 //
-// Time complexity: O(4096 + C×n).
-// s is the distance between index and current pointer,
+// Time complexity: O(4096 + C×(n+1)).
+// n is the distance between index and current pointer,
 // C is relevant to the average changes of all these time point.
 func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]any, updateUnixTime int64, err error) {
 	var oriChunk define.ChunkMatrix
