@@ -31,7 +31,7 @@ func (s *ChunkTimeline) next() (
 			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
 		}
 
-		_ = define.ChunkRestore(s.currentChunk, diff)
+		oriChunk = define.ChunkRestore(s.currentChunk, diff)
 	}
 
 	// NBTs
@@ -54,7 +54,7 @@ func (s *ChunkTimeline) next() (
 	// Timeline Unix Time
 	updateUnixTime = s.timelineUnixTime[s.ptr-s.barrierLeft]
 
-	oriChunk = s.currentChunk
+	s.currentChunk = oriChunk
 	s.currentNBT = oriNBTs
 	s.ptr++
 

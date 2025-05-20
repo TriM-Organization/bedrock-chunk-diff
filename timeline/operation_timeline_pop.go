@@ -66,7 +66,7 @@ func (s *ChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
 
-			_ = define.ChunkRestore(dst, diff)
+			dst = define.ChunkRestore(dst, diff)
 			newDiff = define.ChunkDifference(make(define.ChunkMatrix, len(dst)), dst)
 		}
 
