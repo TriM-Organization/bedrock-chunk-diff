@@ -31,7 +31,7 @@ func (s *ChunkTimeline) next() (
 			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
 		}
 
-		oriChunk = define.ChunkRestore(s.currentChunk, diff)
+		_ = define.ChunkRestore(s.currentChunk, diff)
 	}
 
 	// NBTs
@@ -54,7 +54,7 @@ func (s *ChunkTimeline) next() (
 	// Timeline Unix Time
 	updateUnixTime = s.timelineUnixTime[s.ptr-s.barrierLeft]
 
-	s.currentChunk = oriChunk
+	oriChunk = s.currentChunk
 	s.currentNBT = oriNBTs
 	s.ptr++
 
@@ -97,7 +97,7 @@ func (s *ChunkTimeline) Next() (
 		for index, value := range layers {
 			layer := sub.Layer(uint8(index))
 
-			if define.MatrixIsEmpty(value) {
+			if define.BlockMatrixIsEmpty(value) {
 				continue
 			}
 
@@ -141,7 +141,7 @@ func (s *ChunkTimeline) Last() (
 		for index, value := range layers {
 			layer := sub.Layer(uint8(index))
 
-			if define.MatrixIsEmpty(value) {
+			if define.BlockMatrixIsEmpty(value) {
 				continue
 			}
 

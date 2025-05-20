@@ -16,9 +16,7 @@ type (
 // and the new highest layer.
 func (l *Layers) Layer(layer int) BlockMatrix {
 	for layer >= len(*l) {
-		temp := *l
-		temp = append(temp, nil)
-		*l = temp
+		*l = append(*l, nil)
 	}
 	return (*l)[layer]
 }
@@ -28,15 +26,14 @@ func (l *Layers) Layer(layer int) BlockMatrix {
 // between the current highest layer and the new highest layer.
 func (d *LayersDiff) Layer(layer int) DiffMatrix {
 	for layer >= len(*d) {
-		temp := *d
-		temp = append(temp, nil)
-		*d = temp
+		*d = append(*d, nil)
 	}
 	return (*d)[layer]
 }
 
 // LayerDifference computes the difference between older and newer.
-// Time complexity: O(4096×n), n = max(len(older), len(newer)).
+// Time complexity: O(L×n), n = max(len(older), len(newer)).
+// L is the average changes of each layer in the sub chunk.
 func LayerDifference(older Layers, newer Layers) LayersDiff {
 	var result LayersDiff
 
@@ -54,15 +51,18 @@ func LayerDifference(older Layers, newer Layers) LayersDiff {
 	return result
 }
 
-// LayerRestore use old and diff to compute the newer layers
-// Time complexity: O(4096×n), n = len(diff).
+// LayerRestore use old and diff to compute the newer layers.
+// Time complexity: O(L×n), n = len(diff).
+// L is the average length of each element in diff.
+//
+// To reduce the time causes, the block martix in returned layers is
+// the same one in the old layers.
 //
 // Note that you could do this operation for all difference array,
 // then you will get the final layers that represents the latest one.
 //
-// In this case, the time complexity is O(n×L×4096) where n is the
-// length of these difference array and n is the average count of
-// each len(diff).
+// In this case, the time complexity is O(C) where C is the count of
+// all block changes.
 func LayerRestore(old Layers, diff LayersDiff) Layers {
 	var result Layers
 

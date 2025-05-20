@@ -62,7 +62,7 @@ func (s *ChunkTimeline) Compact() error {
 	for _, timePoint := range allTimePoint {
 		for _, Chunk := range timePoint {
 			for _, layer := range Chunk {
-				if define.MatrixIsEmpty(layer) {
+				if define.BlockMatrixIsEmpty(layer) {
 					continue
 				}
 				for _, index := range layer {
@@ -77,9 +77,9 @@ func (s *ChunkTimeline) Compact() error {
 			for whichLayer, layer := range Chunk {
 				l := define.Layers{}
 				_ = l.Layer(whichLayer)
-				l[whichLayer] = define.NewMatrix[define.BlockMatrix]()
+				l[whichLayer] = define.NewBlockMatrix()
 
-				if !define.MatrixIsEmpty(layer) {
+				if !define.BlockMatrixIsEmpty(layer) {
 					for index, blockPaletteIndex := range layer {
 						l[whichLayer][index] = newBlockPalette.BlockPaletteIndex(
 							s.blockPalette.BlockRuntimeID(blockPaletteIndex),

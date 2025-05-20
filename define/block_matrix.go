@@ -8,82 +8,77 @@ const MatrixSize = 4096
 type (
 	// BlockMatrix represents a block matrix at a specific point in time.
 	BlockMatrix *[MatrixSize]int32
+	// SingleBlockDiff represents a single block change who in a sub chunk.
+	SingleBlockDiff struct {
+		Index        BlockIndex
+		NewPaletteID int32
+	}
 	// DiffMatrix is a matrix that holds the difference of
 	// BlockMatrix between time i-1 and time i.
 	// Note that i must bigger than 0.
-	DiffMatrix *[MatrixSize]int32
+	DiffMatrix []SingleBlockDiff
 )
 
-// NewMatrix creates and returns new T.
-// Note that the returned T is not nil.
-func NewMatrix[T BlockMatrix | DiffMatrix]() T {
+// NewBlockMatrix creates a new BlockMatrix that full of air and is not nil.
+func NewBlockMatrix() BlockMatrix {
 	return &[MatrixSize]int32{}
 }
 
-// MatrixIsEmpty checks the martix T is empty or not.
-func MatrixIsEmpty[T BlockMatrix | DiffMatrix](matrix T) bool {
+// BlockMatrixIsEmpty checks the given block martix is empty or not.
+func BlockMatrixIsEmpty(matrix BlockMatrix) bool {
 	return (matrix == nil)
 }
 
 // BlockDifference computes the difference between older and newer.
 // Time complexity: O(4096).
 func BlockDifference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
-	if MatrixIsEmpty(older) {
-		if MatrixIsEmpty(newer) {
-			return nil
-		}
-		return DiffMatrix(newer)
+	var result DiffMatrix
+
+	if BlockMatrixIsEmpty(older) && BlockMatrixIsEmpty(newer) {
+		return nil
 	}
 
-	result := NewMatrix[DiffMatrix]()
-
-	if MatrixIsEmpty(newer) {
-		for i := range MatrixSize {
-			result[i] = -older[i]
-		}
-		return result
+	if BlockMatrixIsEmpty(older) {
+		older = NewBlockMatrix()
+	}
+	if BlockMatrixIsEmpty(newer) {
+		newer = NewBlockMatrix()
 	}
 
 	for i := range MatrixSize {
-		result[i] = newer[i] - older[i]
-	}
-
-	isAllAir := true
-	for _, value := range result {
-		if value != 0 {
-			isAllAir = false
+		if newID := newer[i]; newID != older[i] {
+			result = append(result, SingleBlockDiff{
+				Index:        BlockIndex(i),
+				NewPaletteID: newID,
+			})
 		}
 	}
 
-	if isAllAir {
-		return nil
-	}
 	return result
 }
 
 // BlockRestore use old and diff to compute the newer block matrix.
-// Time complexity: O(4096).
+// Note that the returned block martix is the same object of old when
+// old is not empty.
+// Time complexity: O(l), l=len(diff).
 //
 // Note that you could do this operation for all difference array,
 // then you will get the final block matrix that represents the latest one.
 //
-// In this case, the time complexity is O(n×4096) where n is the length of
-// these difference array.
+// In this case, the time complexity is O(n×L) where n is the length of
+// these difference array, and L is the average length of all the diff slice.
 func BlockRestore(old BlockMatrix, diff DiffMatrix) BlockMatrix {
-	if MatrixIsEmpty(old) {
-		if MatrixIsEmpty(diff) {
-			return nil
-		}
-		return BlockMatrix(diff)
-	}
-
-	if MatrixIsEmpty(diff) {
+	if len(diff) == 0 {
 		return old
 	}
 
-	result := NewMatrix[BlockMatrix]()
-	for index, value := range diff {
-		result[index] = old[index] + value
+	if BlockMatrixIsEmpty(old) {
+		old = NewBlockMatrix()
 	}
-	return result
+
+	for _, value := range diff {
+		old[value.Index] = value.NewPaletteID
+	}
+
+	return old
 }

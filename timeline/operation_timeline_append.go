@@ -144,7 +144,7 @@ func (s *ChunkTimeline) Append(Chunk *chunk.Chunk, nbt []map[string]any) error {
 		}
 
 		for index, layer := range value.Layers() {
-			newerBlockMartrix := define.NewMatrix[define.BlockMatrix]()
+			newerBlockMartrix := define.NewBlockMatrix()
 
 			ptr := 0
 			for x := range uint8(16) {

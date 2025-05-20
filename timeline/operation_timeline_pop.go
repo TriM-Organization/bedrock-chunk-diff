@@ -12,8 +12,6 @@ import (
 // only one time point, then we will do no operation.
 func (s *ChunkTimeline) Pop() error {
 	var success bool
-	var blockDst define.ChunkMatrix
-	var nbtDst []define.NBTWithIndex
 
 	if s.isEmpty || s.isReadOnly || s.barrierLeft == s.barrierRight {
 		return nil
@@ -33,7 +31,7 @@ func (s *ChunkTimeline) Pop() error {
 
 	// Blocks
 	for range 1 {
-		var ori define.ChunkMatrix
+		var dst define.ChunkMatrix
 		var newDiff define.ChunkDiffMatrix
 
 		// Step 1: Get element 1 from timeline
@@ -47,7 +45,7 @@ func (s *ChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
 
-			ori = define.ChunkRestore(make(define.ChunkMatrix, len(diff)), diff)
+			dst = define.ChunkRestore(make(define.ChunkMatrix, len(diff)), diff)
 		}
 
 		// Setp 2: Get element 2 from timeline
@@ -68,8 +66,8 @@ func (s *ChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
 
-			blockDst = define.ChunkRestore(ori, diff)
-			newDiff = define.ChunkDifference(make(define.ChunkMatrix, len(blockDst)), blockDst)
+			_ = define.ChunkRestore(dst, diff)
+			newDiff = define.ChunkDifference(make(define.ChunkMatrix, len(dst)), dst)
 		}
 
 		// Setp 3: Pop
@@ -95,7 +93,7 @@ func (s *ChunkTimeline) Pop() error {
 
 	// NBTs
 	for range 1 {
-		var ori []define.NBTWithIndex
+		var dst []define.NBTWithIndex
 		var newDiff *define.MultipleDiffNBT
 
 		// Setp 1: Get element 1 from timeline
@@ -109,7 +107,7 @@ func (s *ChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
 
-			ori, err = define.NBTRestore(nil, diff)
+			dst, err = define.NBTRestore(nil, diff)
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
@@ -133,12 +131,12 @@ func (s *ChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
 
-			nbtDst, err = define.NBTRestore(ori, diff)
+			dst, err = define.NBTRestore(dst, diff)
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
 
-			newDiff, err = define.NBTDifference(nil, nbtDst)
+			newDiff, err = define.NBTDifference(nil, dst)
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}

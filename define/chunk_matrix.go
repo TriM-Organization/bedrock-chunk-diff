@@ -14,8 +14,8 @@ type (
 // ChunkDifference computes the difference between older and newer.
 // We assume len(older) = len(newer).
 //
-// Time complexity: O(n×L×4096), n=len(older).
-// L is the average count of layers of each sub chunk have.
+// Time complexity: O(n×L), n=len(older).
+// L is the average changes for each sub chunk.
 func ChunkDifference(older ChunkMatrix, newer ChunkMatrix) ChunkDiffMatrix {
 	result := make(ChunkDiffMatrix, len(older))
 	for i := range result {
@@ -27,14 +27,18 @@ func ChunkDifference(older ChunkMatrix, newer ChunkMatrix) ChunkDiffMatrix {
 // BlockRestore use old and diff to compute the newer chunk matrix.
 // We assume len(old) = len(diff).
 //
-// Time complexity: O(n×L×4096), n=len(old).
-// L is the average count of layers of each sub chunk have.
+// Time complexity: O(n×L), n=len(old).
+// L is the average count of changes that each sub chunk have.
+//
+// To reduce the time causes, the block martix in layers of each sub chunk
+// in the returned chunk martix is the same one in the corresponding layer
+// that come from old.
 //
 // Note that you could do this operation for all difference array,
 // then you will get the final block matrix that represents the
 // latest one.
 //
-// In this case, the time complexity is O(k×n×L×4096) where k is the
+// In this case, the time complexity is O(k×n×L) where k is the
 // length of these difference array.
 func ChunkRestore(old ChunkMatrix, diff ChunkDiffMatrix) ChunkMatrix {
 	result := make(ChunkMatrix, len(old))
