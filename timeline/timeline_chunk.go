@@ -40,12 +40,12 @@ type ChunkTimeline struct {
 	blockPalette     *define.BlockPalette
 
 	ptr          uint
-	currentChunk define.ChunkMatrix
-	currentNBT   []define.NBTWithIndex
-
 	barrierLeft  uint
 	barrierRight uint
 	maxLimit     uint
+
+	currentChunk define.ChunkMatrix
+	currentNBT   []define.NBTWithIndex
 
 	latestChunk define.ChunkMatrix
 	latestNBT   []define.NBTWithIndex
@@ -90,14 +90,21 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 	}()
 
 	result = &ChunkTimeline{
-		db:           t.DB,
-		pos:          pos,
-		isReadOnly:   readOnly,
-		releaseFunc:  releaseFunc,
-		blockPalette: define.NewBlockPalette(),
-		currentChunk: make(define.ChunkMatrix, pos.Dimension.Height()>>4),
-		maxLimit:     DefaultMaxLimit,
-		latestChunk:  make(define.ChunkMatrix, pos.Dimension.Height()>>4),
+		db:               t.DB,
+		pos:              pos,
+		releaseFunc:      releaseFunc,
+		isReadOnly:       readOnly,
+		isEmpty:          false,
+		timelineUnixTime: nil,
+		blockPalette:     define.NewBlockPalette(),
+		ptr:              0,
+		barrierLeft:      0,
+		barrierRight:     0,
+		maxLimit:         DefaultMaxLimit,
+		currentChunk:     make(define.ChunkMatrix, pos.Dimension.Height()>>4),
+		currentNBT:       nil,
+		latestChunk:      make(define.ChunkMatrix, pos.Dimension.Height()>>4),
+		latestNBT:        nil,
 	}
 
 	err = t.DB.(*database).bdb.View(func(tx *bbolt.Tx) error {

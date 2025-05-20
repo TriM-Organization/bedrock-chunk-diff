@@ -1,6 +1,10 @@
 package timeline
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/TriM-Organization/bedrock-chunk-diff/define"
+)
 
 // Empty returns whether this timeline is empty or not.
 // If is empty, then calling Save will result in no operation.
@@ -13,6 +17,14 @@ func (s *ChunkTimeline) Empty() bool {
 // underlying timeline will result in no operation.
 func (s *ChunkTimeline) ReadOnly() bool {
 	return s.isReadOnly
+}
+
+// ResetPointer resets the pointer to the first time point of this timeline.
+// ResetPointer is always successful if there even have no time point.
+func (s *ChunkTimeline) ResetPointer() {
+	s.ptr = s.barrierLeft
+	s.currentChunk = make(define.ChunkMatrix, s.pos.Dimension.Height()>>4)
+	s.currentNBT = nil
 }
 
 // AllTimePoint returns a slice that holds the unix time of all time points

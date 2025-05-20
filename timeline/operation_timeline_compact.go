@@ -11,13 +11,15 @@ import (
 //
 // If current timeline is empty or read only, then calling Compact will do no operation.
 //
+// Note that if you got a non-nil from Compact, then the underlying pointer will back to the
+// firest time point due to when an error occurs, some of the underlying data maybe is inconsistent.
+//
 // Compact is very expensive due to its time complexity is O(C×k×4096×N×L).
 //
 //   - k is the count of sub chunks that this chunk have.
 //   - N is the count of time point that this timeline have.
 //   - L is the average count of layers for each sub chunks in this timeline.
-//   - C is a little big (bigger than 2) due to there are multiple difference/prefix-sum
-//     operations need to do.
+//   - C is a little big (bigger than 2) due to there are multiple operations need to do.
 func (s *ChunkTimeline) Compact() error {
 	var err error
 	var success bool
@@ -32,6 +34,12 @@ func (s *ChunkTimeline) Compact() error {
 		}
 	}
 
+	defer func() {
+		if !success {
+			s.ResetPointer()
+		}
+	}()
+
 	originPtr := s.ptr
 	length := s.barrierRight - s.barrierLeft + 1
 	allTimePoint := make([]define.ChunkMatrix, length)
@@ -44,7 +52,6 @@ func (s *ChunkTimeline) Compact() error {
 
 		allTimePoint[index], _, _, _, err = s.next()
 		if err != nil {
-			s.ptr = originPtr
 			return fmt.Errorf("(s *ChunkTimeline) Compact: %v", err)
 		}
 
@@ -97,19 +104,14 @@ func (s *ChunkTimeline) Compact() error {
 		return fmt.Errorf("(s *ChunkTimeline) Compact: %v", err)
 	}
 
+	// Rollback prepare
 	originBarrierLeft := s.barrierLeft
 	originBarrierRight := s.barrierRight
 	originLatestChunk := s.latestChunk
-	originCurrentChunk := s.currentChunk
-	originCurrentNBT := s.currentNBT
-
 	defer func() {
-		s.ptr = originPtr
 		s.barrierLeft = originBarrierLeft
 		s.barrierRight = originBarrierRight
 		s.latestChunk = originLatestChunk
-		s.currentChunk = originCurrentChunk
-		s.currentNBT = originCurrentNBT
 		if !success {
 			_ = transaction.Discard()
 			return
