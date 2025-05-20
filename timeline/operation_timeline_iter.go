@@ -127,6 +127,10 @@ func (s *ChunkTimeline) Next() (
 	var oriChunk define.ChunkMatrix
 	var oriNBTs []define.NBTWithIndex
 
+	if s.isEmpty {
+		return nil, nil, 0, false, fmt.Errorf("(s *ChunkTimeline) Next: Current chunk timeline is empty")
+	}
+
 	oriChunk, oriNBTs, updateUnixTime, isLastElement, err = s.next()
 	if err != nil {
 		s.ResetPointer()
@@ -155,7 +159,7 @@ func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]an
 	var oriNBTs []define.NBTWithIndex
 
 	if s.isEmpty {
-		return nil, nil, 0, fmt.Errorf("JumpTo: Current chunk timeline is empty")
+		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) JumpTo: Current chunk timeline is empty")
 	}
 
 	idx := s.barrierLeft + index
@@ -190,10 +194,15 @@ func (s *ChunkTimeline) Last() (
 	updateUnixTime int64,
 	err error,
 ) {
+	if s.isEmpty {
+		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) Last: Current chunk timeline is empty")
+	}
+
 	oriNBTsCopyOne, err := define.NBTDeepCopy(s.latestNBT)
 	if err != nil {
 		return nil, nil, 0, fmt.Errorf("Last: %v", err)
 	}
 	c, nbts = s.convert(s.latestChunk, oriNBTsCopyOne)
+
 	return c, nbts, s.timelineUnixTime[len(s.timelineUnixTime)-1], nil
 }
