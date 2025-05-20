@@ -19,6 +19,11 @@ func (s *ChunkTimeline) ReadOnly() bool {
 	return s.isReadOnly
 }
 
+// Pointer returns the index of the next time point that will be read.
+func (s *ChunkTimeline) Pointer() uint {
+	return s.ptr - s.barrierLeft
+}
+
 // ResetPointer resets the pointer to the first time point of this timeline.
 // ResetPointer is always successful if there even have no time point.
 func (s *ChunkTimeline) ResetPointer() {
