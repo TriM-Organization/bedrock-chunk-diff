@@ -69,6 +69,25 @@ func ReadOnly(id C.longlong) C.int {
 	return asCbool((*ctl).ReadOnly())
 }
 
+//export Pointer
+func Pointer(id C.longlong) C.int {
+	ctl := savedChunkTimeline.LoadObject(int(id))
+	if ctl == nil {
+		return -1
+	}
+	return C.int((*ctl).Pointer())
+}
+
+//export ResetPointer
+func ResetPointer(id C.longlong) *C.char {
+	ctl := savedChunkTimeline.LoadObject(int(id))
+	if ctl == nil {
+		return C.CString("ResetPointer: Chunk timeline not found")
+	}
+	(*ctl).ResetPointer()
+	return C.CString("")
+}
+
 //export AllTimePoint
 func AllTimePoint(id C.longlong) *C.char {
 	ctl := savedChunkTimeline.LoadObject(int(id))
@@ -150,6 +169,31 @@ func NextDiskChunk(id C.longlong) (complexReturn *C.char) {
 //export NextNetworkChunk
 func NextNetworkChunk(id C.longlong) (complexReturn *C.char) {
 	return next(id, chunk.NetworkEncoding)
+}
+
+// jumpTo ..
+func jumpTo(id C.longlong, index C.int, e chunk.Encoding) (complexReturn *C.char) {
+	ctl := savedChunkTimeline.LoadObject(int(id))
+	if ctl == nil {
+		return asCbytes(nil)
+	}
+
+	c, nbts, updateUnixTime, err := (*ctl).JumpTo(uint(index))
+	if err != nil {
+		return asCbytes(nil)
+	}
+
+	return packNextOrLast(c, e, nbts, updateUnixTime, nil)
+}
+
+//export JumpToDiskChunk
+func JumpToDiskChunk(id C.longlong, index C.int) (complexReturn *C.char) {
+	return jumpTo(id, index, chunk.DiskEncoding)
+}
+
+//export JumpToNetworkChunk
+func JumpToNetworkChunk(id C.longlong, index C.int) (complexReturn *C.char) {
+	return jumpTo(id, index, chunk.NetworkEncoding)
 }
 
 // last ..

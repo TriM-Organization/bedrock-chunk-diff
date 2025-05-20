@@ -148,7 +148,7 @@ func (s *ChunkTimeline) Next() (
 //
 // Time complexity: O(4096×n + C×(d+1)).
 //   - n is the sub chunk count of this chunk.
-//   - d is the distance between index and current pointer,
+//   - d is the distance between index and current pointer.
 //   - C is relevant to the average changes of all these time point.
 func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]any, updateUnixTime int64, err error) {
 	var oriChunk define.ChunkMatrix

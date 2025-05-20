@@ -9,12 +9,16 @@ LIB.AppendDiskChunk.argtypes = [CLongLong, CSlice, CSlice, CInt, CInt]
 LIB.AppendNetworkChunk.argtypes = [CLongLong, CSlice, CSlice, CInt, CInt]
 LIB.Empty.argtypes = [CLongLong]
 LIB.ReadOnly.argtypes = [CLongLong]
+LIB.Pointer.argtypes = [CLongLong]
+LIB.ResetPointer.argtypes = [CLongLong]
 LIB.AllTimePoint.argtypes = [CLongLong]
 LIB.AllTimePointLen.argtypes = [CLongLong]
 LIB.SetMaxLimit.argtypes = [CLongLong, CInt]
 LIB.Compact.argtypes = [CLongLong]
 LIB.NextDiskChunk.argtypes = [CLongLong]
 LIB.NextNetworkChunk.argtypes = [CLongLong]
+LIB.JumpToDiskChunk.argtypes = [CLongLong, CInt]
+LIB.JumpToNetworkChunk.argtypes = [CLongLong, CInt]
 LIB.LastDiskChunk.argtypes = [CLongLong]
 LIB.LastNetworkChunk.argtypes = [CLongLong]
 LIB.Pop.argtypes = [CLongLong]
@@ -24,12 +28,16 @@ LIB.AppendDiskChunk.restype = CString
 LIB.AppendNetworkChunk.restype = CString
 LIB.Empty.restype = CInt
 LIB.ReadOnly.restype = CInt
+LIB.Pointer.restype = CInt
+LIB.ResetPointer.restype = CString
 LIB.AllTimePoint.restype = CSlice
 LIB.AllTimePointLen.restype = CInt
 LIB.SetMaxLimit.restype = CString
 LIB.Compact.restype = CString
 LIB.NextDiskChunk.restype = CSlice
 LIB.NextNetworkChunk.restype = CSlice
+LIB.JumpToDiskChunk.restype = CSlice
+LIB.JumpToNetworkChunk.restype = CSlice
 LIB.LastDiskChunk.restype = CSlice
 LIB.LastNetworkChunk.restype = CSlice
 LIB.Pop.restype = CString
@@ -80,6 +88,14 @@ def ctl_read_only(id: int) -> int:
     return int(LIB.ReadOnly(CLongLong(id)))
 
 
+def ctl_pointer(id: int) -> int:
+    return int(LIB.Pointer(CLongLong(id)))
+
+
+def ctl_reset_pointer(id: int) -> str:
+    return as_python_string(LIB.ResetPointer(CLongLong(id)))
+
+
 def ctl_all_time_point(id: int) -> numpy.ndarray:
     return numpy.frombuffer(
         as_python_bytes(LIB.AllTimePoint(CLongLong(id))), dtype="<i8"
@@ -100,30 +116,50 @@ def ctl_compact(id: int) -> str:
 
 def ctl_next_disk_chunk(
     id: int,
-) -> tuple[list[bytes], int, int, list[bytes], int, bool]:
+) -> tuple[list[bytes], int, int, list[bytes], int, bool, bool]:
     return unpack_next_or_last(as_python_bytes(LIB.NextDiskChunk(CLongLong(id))), True)
 
 
 def ctl_next_network_chunk(
     id: int,
-) -> tuple[list[bytes], int, int, list[bytes], int, bool]:
+) -> tuple[list[bytes], int, int, list[bytes], int, bool, bool]:
     return unpack_next_or_last(
         as_python_bytes(LIB.NextNetworkChunk(CLongLong(id))), True
     )
 
 
-def ctl_last_disk_chunk(id: int) -> tuple[list[bytes], int, int, list[bytes], int]:
-    sub_chunks, range_start, range_end, nbts, update_unix_time, _ = unpack_next_or_last(
-        as_python_bytes(LIB.LastDiskChunk(CLongLong(id))), False
+def ctl_jump_to_disk_chunk(
+    id: int, index: int
+) -> tuple[list[bytes], int, int, list[bytes], int, bool, bool]:
+    return unpack_next_or_last(
+        as_python_bytes(LIB.JumpToDiskChunk(CLongLong(id), CInt(index))), False
     )
-    return sub_chunks, range_start, range_end, nbts, update_unix_time
 
 
-def ctl_last_network_chunk(id: int) -> tuple[list[bytes], int, int, list[bytes], int]:
-    sub_chunks, range_start, range_end, nbts, update_unix_time, _ = unpack_next_or_last(
-        as_python_bytes(LIB.LastNetworkChunk(CLongLong(id))), False
+def ctl_jump_to_network_chunk(
+    id: int, index: int
+) -> tuple[list[bytes], int, int, list[bytes], int, bool, bool]:
+    return unpack_next_or_last(
+        as_python_bytes(LIB.JumpToNetworkChunk(CLongLong(id), CInt(index))), False
     )
-    return sub_chunks, range_start, range_end, nbts, update_unix_time
+
+
+def ctl_last_disk_chunk(
+    id: int,
+) -> tuple[list[bytes], int, int, list[bytes], int, bool]:
+    sub_chunks, range_start, range_end, nbts, update_unix_time, _, success = (
+        unpack_next_or_last(as_python_bytes(LIB.LastDiskChunk(CLongLong(id))), False)
+    )
+    return sub_chunks, range_start, range_end, nbts, update_unix_time, success
+
+
+def ctl_last_network_chunk(
+    id: int,
+) -> tuple[list[bytes], int, int, list[bytes], int, bool]:
+    sub_chunks, range_start, range_end, nbts, update_unix_time, _, success = (
+        unpack_next_or_last(as_python_bytes(LIB.LastNetworkChunk(CLongLong(id))), False)
+    )
+    return sub_chunks, range_start, range_end, nbts, update_unix_time, success
 
 
 def ctl_pop(id: int) -> str:

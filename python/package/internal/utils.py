@@ -24,7 +24,9 @@ def pack_bytes_list(sub_chunks: list[bytes]) -> bytes:
 
 def unpack_next_or_last(
     payload: bytes, read_is_last_element: bool
-) -> tuple[list[bytes], int, int, list[bytes], int, bool]:
+) -> tuple[list[bytes], int, int, list[bytes], int, bool, bool]:
+    if len(payload) == 0:
+        return [], 0, 0, [], 0, False, False
     r = BytesIO(payload)
 
     length: int = struct.unpack("<I", r.read(4))[0]
@@ -40,15 +42,17 @@ def unpack_next_or_last(
 
     update_unix_time: int = struct.unpack("<q", r.read(8))[0]
 
+    is_last_element = False
     if read_is_last_element:
         is_last_element = bool(int(r.read(1)))
-        return (
             sub_chunks,
-            range_start,
-            range_end,
-            nbts,
-            update_unix_time,
-            is_last_element,
-        )
-    else:
-        return sub_chunks, range_start, range_end, nbts, update_unix_time, False
+
+    return (
+        sub_chunks,
+        range_start,
+        range_end,
+        nbts,
+        update_unix_time,
+        is_last_element,
+        True,
+    )
