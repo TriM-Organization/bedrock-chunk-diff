@@ -152,13 +152,13 @@ func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]an
 	var oriChunk define.ChunkMatrix
 	var oriNBTs []define.NBTWithIndex
 
-	timePoints := s.barrierRight - s.barrierLeft + 1
-	if index >= timePoints {
-		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) JumpTo: index %d is out of index %d", index, timePoints-1)
+	idx := s.barrierLeft + index
+	if idx > s.barrierRight {
+		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) JumpTo: index %d is out of index %d", index, s.barrierRight-s.barrierLeft)
 	}
 
 	for {
-		couldBreak := (s.ptr == index)
+		couldBreak := (s.ptr == idx)
 
 		oriChunk, oriNBTs, updateUnixTime, _, err = s.next()
 		if err != nil {
