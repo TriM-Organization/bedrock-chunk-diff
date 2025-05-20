@@ -40,15 +40,15 @@ func SingleChunkRunner(
 	}
 
 	index, hit := slices.BinarySearch(tl.AllTimePoint(), providedUnixTime)
-	if hit {
-		index++
+	if !hit {
+		index--
 	}
 
-	if index <= 0 {
+	if index < 0 {
 		if !ensureExistOne {
 			return
 		}
-		index = 1
+		index = 0
 	}
 
 	if index >= tl.AllTimePointLen() {
@@ -58,12 +58,10 @@ func SingleChunkRunner(
 			return
 		}
 	} else {
-		for range index {
-			c, nbts, _, _, err = tl.Next()
-			if err != nil {
-				pterm.Warning.Printf("SingleChunkRunner: %v\n", err)
-				return
-			}
+		c, nbts, _, err = tl.JumpTo(uint(index))
+		if err != nil {
+			pterm.Warning.Printf("SingleChunkRunner: %v\n", err)
+			return
 		}
 	}
 
