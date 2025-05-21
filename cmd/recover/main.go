@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"flag"
-	"fmt"
 	"log"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/TriM-Organization/bedrock-chunk-diff/timeline"
 	operator_define "github.com/TriM-Organization/bedrock-world-operator/define"
 	"github.com/TriM-Organization/bedrock-world-operator/world"
+	"github.com/pterm/pterm"
 	"go.etcd.io/bbolt"
 )
 
@@ -124,5 +124,5 @@ func main() {
 		IterEntireDatabase(db, w, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 	}
 
-	fmt.Println("ALL DOWN :)")
+	pterm.Success.Println("ALL DOWN :)")
 }

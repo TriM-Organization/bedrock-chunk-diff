@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
 	"github.com/TriM-Organization/bedrock-chunk-diff/timeline"
 	"github.com/TriM-Organization/bedrock-world-operator/world"
+	"github.com/pterm/pterm"
 	"go.etcd.io/bbolt"
 )
 
@@ -23,8 +23,8 @@ func IterRange(
 	startTime := time.Now()
 	counter := 0
 	defer func() {
-		fmt.Println("Time used:", time.Since(startTime))
-		fmt.Println("Found chunks:", counter)
+		pterm.Success.Println("Time used:", time.Since(startTime))
+		pterm.Success.Println("Found chunks:", counter)
 	}()
 
 	err := db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {

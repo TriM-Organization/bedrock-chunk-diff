@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"slices"
 	"sync"
 
@@ -25,7 +24,7 @@ func SingleChunkRunner(
 
 	defer func() {
 		waiter.Done()
-		fmt.Printf("Chunk (%d, %d) in dim %d is down.\n", pos.ChunkPos[0], pos.ChunkPos[1], pos.Dimension)
+		pterm.Info.Printf("Chunk (%d, %d) in dim %d is down.\n", pos.ChunkPos[0], pos.ChunkPos[1], pos.Dimension)
 	}()
 
 	tl, err := db.NewChunkTimeline(pos, true)
