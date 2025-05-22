@@ -104,8 +104,8 @@ func (s *ChunkTimeline) appendNBTs(
 // point, whether new time point will be added in
 // the end or not.
 //
-// The way to leave empty space is by calling 
-// Pop, and the poped time points must be the 
+// The way to leave empty space is by calling
+// Pop, and the poped time points must be the
 // most earliest one.
 //
 // If current timeline is read only, then calling
@@ -152,8 +152,10 @@ func (s *ChunkTimeline) Append(
 	}
 
 	// NOP Check
-	if NOPWhenNoChange && define.ChunkNoChange(chunkDiff) && define.NBTNoChange(*nbtDiff) {
-		return nil
+	if !s.isEmpty {
+		if NOPWhenNoChange && define.ChunkNoChange(chunkDiff) && define.NBTNoChange(*nbtDiff) {
+			return nil
+		}
 	}
 
 	// Append

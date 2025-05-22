@@ -14,6 +14,7 @@ import (
 func SingleChunkRunner(
 	db timeline.TimelineDatabase,
 	w world.World,
+	doCompact bool,
 	providedUnixTime int64,
 	ensureExistOne bool,
 	waiter *sync.WaitGroup,
@@ -64,6 +65,9 @@ func SingleChunkRunner(
 		}
 	}
 
+	if doCompact {
+		c.Compact()
+	}
 	err = w.SaveChunk(pos.Dimension, pos.ChunkPos, c)
 	if err != nil {
 		pterm.Warning.Printf("SingleChunkRunner: %v\n", err)

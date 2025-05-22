@@ -8,14 +8,14 @@ import (
 // All time point in this line will share the same palette.
 type BlockPalette struct {
 	bp      []uint32
-	mapping map[uint32]int32
+	mapping map[uint32]uint32
 }
 
 // NewBlockPalette creates a new block palette that only have a air block.
 // Technically speaking, air does not actually exist, but it can be found by agreement.
 func NewBlockPalette() *BlockPalette {
 	return &BlockPalette{
-		mapping: make(map[uint32]int32),
+		mapping: make(map[uint32]uint32),
 	}
 }
 
@@ -33,7 +33,7 @@ func (b *BlockPalette) AddBlock(blockRuntimeID uint32) {
 	}
 
 	b.bp = append(b.bp, blockRuntimeID)
-	b.mapping[blockRuntimeID] = int32(len(b.bp))
+	b.mapping[blockRuntimeID] = uint32(len(b.bp))
 }
 
 // BlockPaletteIndex finds the index of blockRuntimeID in block palette.
@@ -42,7 +42,7 @@ func (b *BlockPalette) AddBlock(blockRuntimeID uint32) {
 // Returned index is the real index plus 1.
 // If you got 0, then that means this is an air block.
 // We don't save air block in block palette, and you should to pay attention to it.
-func (b *BlockPalette) BlockPaletteIndex(blockRuntimeID uint32) int32 {
+func (b *BlockPalette) BlockPaletteIndex(blockRuntimeID uint32) uint32 {
 	if blockRuntimeID == block.AirRuntimeID {
 		return 0
 	}
@@ -58,7 +58,7 @@ func (b *BlockPalette) BlockPaletteIndex(blockRuntimeID uint32) int32 {
 
 // BlockRuntimeID return the block runtime ID that crresponding to blockPaletteIndex.
 // Will not check if blockPaletteIndex is out of index (if out of index, then runtime panic).
-func (b *BlockPalette) BlockRuntimeID(blockPaletteIndex int32) uint32 {
+func (b *BlockPalette) BlockRuntimeID(blockPaletteIndex uint32) uint32 {
 	if blockPaletteIndex == 0 {
 		return block.AirRuntimeID
 	}
@@ -83,8 +83,8 @@ func (b *BlockPalette) BlockPalette() []uint32 {
 // and all is valid Minecraft standard blocks.
 func (b *BlockPalette) SetBlockPalette(newPalette []uint32) {
 	b.bp = newPalette
-	b.mapping = make(map[uint32]int32)
+	b.mapping = make(map[uint32]uint32)
 	for key, value := range b.bp {
-		b.mapping[value] = int32(key)
+		b.mapping[value] = uint32(key)
 	}
 }

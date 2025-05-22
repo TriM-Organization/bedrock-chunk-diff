@@ -7,11 +7,11 @@ const MatrixSize = 4096
 
 type (
 	// BlockMatrix represents a block matrix at a specific point in time.
-	BlockMatrix *[MatrixSize]int32
+	BlockMatrix *[MatrixSize]uint32
 	// SingleBlockDiff represents a single block change who in a sub chunk.
 	SingleBlockDiff struct {
-		Index        BlockIndex
-		NewPaletteID int32
+		IndexDelta   uint32
+		NewPaletteID uint32
 	}
 	// DiffMatrix is a matrix that holds the difference of
 	// BlockMatrix between time i-1 and time i.
@@ -21,7 +21,7 @@ type (
 
 // NewBlockMatrix creates a new BlockMatrix that full of air and is not nil.
 func NewBlockMatrix() BlockMatrix {
-	return &[MatrixSize]int32{}
+	return &[MatrixSize]uint32{}
 }
 
 // BlockMatrixIsEmpty checks the given block martix is empty or not.
@@ -45,12 +45,14 @@ func BlockDifference(older BlockMatrix, newer BlockMatrix) DiffMatrix {
 		newer = NewBlockMatrix()
 	}
 
-	for i := range MatrixSize {
-		if newID := newer[i]; newID != older[i] {
+	lastIndex := 0
+	for index := range MatrixSize {
+		if newID := newer[index]; newID != older[index] {
 			result = append(result, SingleBlockDiff{
-				Index:        BlockIndex(i),
+				IndexDelta:   uint32(index - lastIndex),
 				NewPaletteID: newID,
 			})
+			lastIndex = index
 		}
 	}
 
@@ -76,8 +78,10 @@ func BlockRestore(old BlockMatrix, diff DiffMatrix) BlockMatrix {
 		old = NewBlockMatrix()
 	}
 
+	index := uint32(0)
 	for _, value := range diff {
-		old[value.Index] = value.NewPaletteID
+		index += value.IndexDelta
+		old[index] = value.NewPaletteID
 	}
 
 	return old

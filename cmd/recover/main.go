@@ -18,6 +18,7 @@ var (
 	path             *string
 	output           *string
 	maxConcurrent    *int
+	doCompact        *bool
 	useRange         *bool
 	rangeDimension   *int
 	rangeStartX      *int
@@ -33,6 +34,7 @@ var (
 func init() {
 	path = flag.String("path", "", "The path of your timeline database.")
 	output = flag.String("output", "", "The path to output your Minecraft world.")
+	doCompact = flag.Bool("do-compact", false, "Compact the output mcworld to make it as small as possible.")
 	maxConcurrent = flag.Int("max-concurrent", 4096, "The maximum concurrent quantity. Set 0 to disable. Note that set to 1 is slow than when set to 0.")
 
 	useRange = flag.Bool("use-range", false, "If you would like recover the part of the world, but not the entire.")
@@ -116,12 +118,12 @@ func main() {
 		}
 
 		if shouldIterEntire {
-			IterRangeEntireDatabase(db, w, enumChunks, *maxConcurrent, *providedUnixTime, *ensureExistOne)
+			IterRangeEntireDatabase(db, w, *doCompact, enumChunks, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 		} else {
-			IterRange(db, w, enumChunks, *maxConcurrent, *providedUnixTime, *ensureExistOne)
+			IterRange(db, w, *doCompact, enumChunks, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 		}
 	} else {
-		IterEntireDatabase(db, w, *maxConcurrent, *providedUnixTime, *ensureExistOne)
+		IterEntireDatabase(db, w, *doCompact, *maxConcurrent, *providedUnixTime, *ensureExistOne)
 	}
 
 	pterm.Success.Println("ALL DOWN :)")

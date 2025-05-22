@@ -16,6 +16,7 @@ import (
 func IterEntireDatabase(
 	db timeline.TimelineDatabase,
 	w world.World,
+	doCompact bool,
 	maxConcurrent int,
 	providedUnixTime int64,
 	ensureExistOne bool,
@@ -44,7 +45,7 @@ func IterEntireDatabase(
 
 			if maxConcurrent == 0 {
 				waiter.Add(1)
-				SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
+				SingleChunkRunner(db, w, doCompact, providedUnixTime, ensureExistOne, waiter, pos)
 			} else {
 				if startGoRoutines > maxConcurrent {
 					waiter.Wait()
@@ -52,7 +53,7 @@ func IterEntireDatabase(
 				}
 				startGoRoutines++
 				waiter.Add(1)
-				go SingleChunkRunner(db, w, providedUnixTime, ensureExistOne, waiter, pos)
+				go SingleChunkRunner(db, w, doCompact, providedUnixTime, ensureExistOne, waiter, pos)
 			}
 
 			return nil

@@ -17,7 +17,7 @@ func BlockMatrixToBytes(buf *bytes.Buffer, blockMatrix define.BlockMatrix) {
 
 	w := protocol.NewWriter(buf, 0)
 	for i := range define.MatrixSize {
-		w.Varint32(&blockMatrix[i])
+		w.Varuint32(&blockMatrix[i])
 	}
 }
 
@@ -32,9 +32,7 @@ func BytesToBlockMatrix(buf *bytes.Buffer) define.BlockMatrix {
 	result := define.NewBlockMatrix()
 
 	for i := range define.MatrixSize {
-		var value int32
-		r.Varint32(&value)
-		result[i] = value
+		r.Varuint32(&result[i])
 	}
 
 	return result
@@ -54,8 +52,10 @@ func DiffMatrixToBytes(buf *bytes.Buffer, diffMatrix define.DiffMatrix) {
 	w.Uint16(&length)
 
 	for _, value := range diffMatrix {
-		w.Uint16((*uint16)(&value.Index))
-		w.Varint32(&value.NewPaletteID)
+		w.Varuint32(&value.IndexDelta)
+	}
+	for _, value := range diffMatrix {
+		w.Varuint32(&value.NewPaletteID)
 	}
 }
 
@@ -70,16 +70,13 @@ func BytesToDiffMatrix(buf *bytes.Buffer) (result define.DiffMatrix) {
 
 	r := protocol.NewReader(buf, 0, false)
 	r.Uint16(&length)
+	result = make([]define.SingleBlockDiff, length)
 
-	for range length {
-		var idx define.BlockIndex
-		var newPaletteID int32
-		r.Uint16((*uint16)(&idx))
-		r.Varint32(&newPaletteID)
-		result = append(result, define.SingleBlockDiff{
-			Index:        idx,
-			NewPaletteID: newPaletteID,
-		})
+	for index := range length {
+		r.Varuint32(&result[index].IndexDelta)
+	}
+	for index := range length {
+		r.Varuint32(&result[index].NewPaletteID)
 	}
 
 	return
