@@ -10,7 +10,11 @@ import (
 )
 
 // "appendBlocks" is an internal implement detail.
-func (s *ChunkTimeline) appendBlocks(newerChunk define.ChunkMatrix, transaction Transaction) error {
+func (s *ChunkTimeline) appendBlocks(
+	newerChunk define.ChunkMatrix,
+	chunkDiff define.ChunkDiffMatrix,
+	transaction Transaction,
+) error {
 	for s.barrierRight-s.barrierLeft+1 >= s.maxLimit {
 		if err := s.Pop(); err != nil {
 			return fmt.Errorf("appendBlocks: %v", err)
@@ -18,8 +22,7 @@ func (s *ChunkTimeline) appendBlocks(newerChunk define.ChunkMatrix, transaction 
 	}
 
 	// Put delta update
-	diff := define.ChunkDifference(s.latestChunk, newerChunk)
-	payload, err := marshal.ChunkDiffMatrixToBytes(diff)
+	payload, err := marshal.ChunkDiffMatrixToBytes(chunkDiff)
 	if err != nil {
 		return fmt.Errorf("appendBlocks: %v", err)
 	}
@@ -48,21 +51,19 @@ func (s *ChunkTimeline) appendBlocks(newerChunk define.ChunkMatrix, transaction 
 }
 
 // "appendNBTs" is an internal implement detail.
-func (s *ChunkTimeline) appendNBTs(newerNBTs []define.NBTWithIndex, transaction Transaction) error {
+func (s *ChunkTimeline) appendNBTs(
+	newerNBTs []define.NBTWithIndex,
+	nbtDiff define.MultipleDiffNBT,
+	transaction Transaction,
+) error {
 	for s.barrierRight-s.barrierLeft+1 >= s.maxLimit {
 		if err := s.Pop(); err != nil {
 			return fmt.Errorf("appendNBTs: %v", err)
 		}
 	}
 
-	// Compute diff
-	diff, err := define.NBTDifference(s.latestNBT, newerNBTs)
-	if err != nil {
-		return fmt.Errorf("appendNBTs: %v", err)
-	}
-
 	// Put delta update
-	payload, err := marshal.MultipleDiffNBTBytes(*diff)
+	payload, err := marshal.MultipleDiffNBTBytes(nbtDiff)
 	if err != nil {
 		return fmt.Errorf("appendNBTs: %v", err)
 	}
@@ -93,6 +94,11 @@ func (s *ChunkTimeline) appendNBTs(newerNBTs []define.NBTWithIndex, transaction 
 // Append tries append a new chunk with block
 // NBT data to the timeline of current chunk.
 //
+// If NOPWhenNoChange is true, then if their
+// is no change between the one that want to
+// append and the latest one, then finally will
+// result in NOP.
+//
 // If the size of timeline will overflow max
 // limit, then we will firstly pop some time
 // point from the underlying timeline.
@@ -102,7 +108,10 @@ func (s *ChunkTimeline) appendNBTs(newerNBTs []define.NBTWithIndex, transaction 
 //
 // If current timeline is read only, then calling
 // Append will do no operation.
-func (s *ChunkTimeline) Append(Chunk *chunk.Chunk, nbt []map[string]any) error {
+func (s *ChunkTimeline) Append(
+	c *chunk.Chunk, nbts []map[string]any,
+	NOPWhenNoChange bool,
+) error {
 	var success bool
 	var newerChunk define.ChunkMatrix
 	var newerNBTs []define.NBTWithIndex
@@ -130,73 +139,29 @@ func (s *ChunkTimeline) Append(Chunk *chunk.Chunk, nbt []map[string]any) error {
 	}()
 
 	// Blocks
-	for _, value := range Chunk.Sub() {
-		l := define.Layers{}
+	newerChunk = define.ChunkToMatrix(c, s.blockPalette)
+	chunkDiff := define.ChunkDifference(s.latestChunk, newerChunk)
 
-		if value.Empty() {
-			if len(value.Layers()) == 0 {
-				newerChunk = append(newerChunk, l)
-				continue
-			}
-			_ = l.Layer(0)
-			newerChunk = append(newerChunk, l)
-			continue
-		}
-
-		for index, layer := range value.Layers() {
-			newerBlockMartrix := define.NewBlockMatrix()
-
-			ptr := 0
-			for x := range uint8(16) {
-				for y := range uint8(16) {
-					for z := range uint8(16) {
-						newerBlockMartrix[ptr] = s.blockPalette.BlockPaletteIndex(layer.At(x, y, z))
-						ptr++
-					}
-				}
-			}
-
-			_ = l.Layer(index)
-			l[index] = newerBlockMartrix
-		}
-
-		newerChunk = append(newerChunk, l)
-	}
-	err = s.appendBlocks(newerChunk, transaction)
+	// NBTs
+	newerNBTs = define.FromChunkNBT(s.pos.ChunkPos, nbts)
+	nbtDiff, err := define.NBTDifference(s.latestNBT, newerNBTs)
 	if err != nil {
 		return fmt.Errorf("(s *ChunkTimeline) Append: %v", err)
 	}
 
-	// NBTs
-	{
-		for _, value := range nbt {
-			x, ok1 := value["x"].(int32)
-			y, ok2 := value["y"].(int32)
-			z, ok3 := value["z"].(int32)
+	// NOP Check
+	if NOPWhenNoChange && define.ChunkNoChange(chunkDiff) && define.NBTNoChange(*nbtDiff) {
+		return nil
+	}
 
-			if !ok1 || !ok2 || !ok3 {
-				return fmt.Errorf("(s *ChunkTimeline) Append: Broken NBT data %#v", value)
-			}
-
-			nbtWithIndex := define.NBTWithIndex{}
-
-			xBlock, zBlock := s.pos.ChunkPos[0]<<4, s.pos.ChunkPos[1]<<4
-
-			deltaX := x - xBlock
-			deltaZ := z - zBlock
-			if deltaX < 0 || deltaX > 15 || deltaZ < 0 || deltaZ > 15 {
-				continue
-			}
-
-			nbtWithIndex.Index.UpdateIndex(uint8(x-xBlock), int16(y), uint8(z-zBlock))
-			nbtWithIndex.NBT = value
-			newerNBTs = append(newerNBTs, nbtWithIndex)
-		}
-
-		err = s.appendNBTs(newerNBTs, transaction)
-		if err != nil {
-			return fmt.Errorf("(s *ChunkTimeline) Append: %v", err)
-		}
+	// Append
+	err = s.appendBlocks(newerChunk, chunkDiff, transaction)
+	if err != nil {
+		return fmt.Errorf("(s *ChunkTimeline) Append: %v", err)
+	}
+	err = s.appendNBTs(newerNBTs, *nbtDiff, transaction)
+	if err != nil {
+		return fmt.Errorf("(s *ChunkTimeline) Append: %v", err)
 	}
 
 	s.latestChunk = newerChunk

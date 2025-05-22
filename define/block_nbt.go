@@ -286,3 +286,8 @@ func NBTRestore(old []NBTWithIndex, diff MultipleDiffNBT) (result []NBTWithIndex
 
 	return
 }
+
+// NBTNoChange reports diff is empty or not.
+func NBTNoChange(diff MultipleDiffNBT) bool {
+	return (len(diff.Removed) == 0 && len(diff.Added) == 0 && len(diff.Modified) == 0)
+}

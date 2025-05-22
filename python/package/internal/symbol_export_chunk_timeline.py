@@ -5,8 +5,8 @@ from .types import as_c_bytes, as_python_bytes, as_python_string
 from .utils import pack_bytes_list, unpack_next_or_last
 
 
-LIB.AppendDiskChunk.argtypes = [CLongLong, CSlice, CSlice, CInt, CInt]
-LIB.AppendNetworkChunk.argtypes = [CLongLong, CSlice, CSlice, CInt, CInt]
+LIB.AppendDiskChunk.argtypes = [CLongLong, CSlice, CSlice, CInt, CInt, CInt]
+LIB.AppendNetworkChunk.argtypes = [CLongLong, CSlice, CSlice, CInt, CInt, CInt]
 LIB.Empty.argtypes = [CLongLong]
 LIB.ReadOnly.argtypes = [CLongLong]
 LIB.Pointer.argtypes = [CLongLong]
@@ -50,6 +50,7 @@ def ctl_append_disk_chunk(
     nbt_payload: list[bytes],
     range_start: int,
     range_end: int,
+    nop_when_no_change: bool,
 ) -> str:
     return as_python_string(
         LIB.AppendDiskChunk(
@@ -58,6 +59,7 @@ def ctl_append_disk_chunk(
             as_c_bytes(b"".join(nbt_payload)),
             CInt(range_start),
             CInt(range_end),
+            CInt(nop_when_no_change),
         )
     )
 
@@ -68,6 +70,7 @@ def ctl_append_network_chunk(
     nbt_payload: list[bytes],
     range_start: int,
     range_end: int,
+    nop_when_no_change: bool,
 ) -> str:
     return as_python_string(
         LIB.AppendNetworkChunk(
@@ -76,6 +79,7 @@ def ctl_append_network_chunk(
             as_c_bytes(b"".join(nbt_payload)),
             CInt(range_start),
             CInt(range_end),
+            CInt(nop_when_no_change),
         )
     )
 

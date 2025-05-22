@@ -19,6 +19,7 @@ func appendChunk(
 	id C.longlong,
 	chunkPayload *C.char, nbtPayload *C.char,
 	rangeStart C.int, rangeEnd C.int,
+	NOPWhenNoChange C.int,
 	e chunk.Encoding,
 ) *C.char {
 	subChunks := unpackChunks(asGoBytes(chunkPayload))
@@ -37,18 +38,28 @@ func appendChunk(
 		return C.CString("append: Chunk timeline not found")
 	}
 
-	(*ctl).Append(c, nbts)
+	(*ctl).Append(c, nbts, asGoBool(NOPWhenNoChange))
 	return C.CString("")
 }
 
 //export AppendDiskChunk
-func AppendDiskChunk(id C.longlong, chunkPayload *C.char, nbtPayload *C.char, rangeStart C.int, rangeEnd C.int) *C.char {
-	return appendChunk(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, chunk.DiskEncoding)
+func AppendDiskChunk(
+	id C.longlong,
+	chunkPayload *C.char, nbtPayload *C.char,
+	rangeStart C.int, rangeEnd C.int,
+	NOPWhenNoChange C.int,
+) *C.char {
+	return appendChunk(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, NOPWhenNoChange, chunk.DiskEncoding)
 }
 
 //export AppendNetworkChunk
-func AppendNetworkChunk(id C.longlong, chunkPayload *C.char, nbtPayload *C.char, rangeStart C.int, rangeEnd C.int) *C.char {
-	return appendChunk(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, chunk.NetworkEncoding)
+func AppendNetworkChunk(
+	id C.longlong,
+	chunkPayload *C.char, nbtPayload *C.char,
+	rangeStart C.int, rangeEnd C.int,
+	NOPWhenNoChange C.int,
+) *C.char {
+	return appendChunk(id, chunkPayload, nbtPayload, rangeStart, rangeEnd, NOPWhenNoChange, chunk.NetworkEncoding)
 }
 
 //export Empty

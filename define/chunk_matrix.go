@@ -47,3 +47,13 @@ func ChunkRestore(old ChunkMatrix, diff ChunkDiffMatrix) ChunkMatrix {
 	}
 	return result
 }
+
+// ChunkNoChange reports diff is empty or not.
+func ChunkNoChange(diff ChunkDiffMatrix) bool {
+	for _, value := range diff {
+		if !LayerNoChange(value) {
+			return false
+		}
+	}
+	return true
+}

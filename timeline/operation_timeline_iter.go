@@ -5,7 +5,6 @@ import (
 
 	"github.com/TriM-Organization/bedrock-chunk-diff/define"
 	"github.com/TriM-Organization/bedrock-chunk-diff/marshal"
-	"github.com/TriM-Organization/bedrock-world-operator/block"
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 )
 
@@ -65,44 +64,6 @@ func (s *ChunkTimeline) next() (
 	return oriChunk, oriNBTs, updateUnixTime, isLastElement, nil
 }
 
-// "convert" is an internal implement detail.
-func (s *ChunkTimeline) convert(
-	oriChunk define.ChunkMatrix,
-	oriNBTs []define.NBTWithIndex,
-) (c *chunk.Chunk, nbts []map[string]any) {
-	// Blocks
-	c = chunk.NewChunk(block.AirRuntimeID, s.pos.Dimension.Range())
-	sub := c.Sub()
-	for ChunkIndex, layers := range oriChunk {
-		subChunk := sub[ChunkIndex]
-		for index, value := range layers {
-			layer := subChunk.Layer(uint8(index))
-
-			if define.BlockMatrixIsEmpty(value) {
-				continue
-			}
-
-			ptr := 0
-			for x := range uint8(16) {
-				for y := range uint8(16) {
-					for z := range uint8(16) {
-						layer.Set(x, y, z, s.blockPalette.BlockRuntimeID(value[ptr]))
-						ptr++
-					}
-				}
-			}
-		}
-	}
-
-	// NBTs
-	nbts = make([]map[string]any, 0)
-	for _, value := range oriNBTs {
-		nbts = append(nbts, value.NBT)
-	}
-
-	return
-}
-
 // Next gets the next time point of current chunk and the NBT blocks in it.
 //
 // With the call to Next, we granted that the returned time keeps increasing until
@@ -136,7 +97,9 @@ func (s *ChunkTimeline) Next() (
 		s.ResetPointer()
 		return nil, nil, 0, false, fmt.Errorf("(s *ChunkTimeline) Next: %v", err)
 	}
-	c, nbts = s.convert(oriChunk, oriNBTs)
+
+	c = define.MatrixToChunk(oriChunk, s.pos.Dimension.Range(), s.blockPalette)
+	nbts = define.ToChunkNBT(oriNBTs)
 
 	return
 }
@@ -180,7 +143,9 @@ func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]an
 			break
 		}
 	}
-	c, nbts = s.convert(oriChunk, oriNBTs)
+
+	c = define.MatrixToChunk(oriChunk, s.pos.Dimension.Range(), s.blockPalette)
+	nbts = define.ToChunkNBT(oriNBTs)
 
 	return
 }
@@ -202,7 +167,9 @@ func (s *ChunkTimeline) Last() (
 	if err != nil {
 		return nil, nil, 0, fmt.Errorf("Last: %v", err)
 	}
-	c, nbts = s.convert(s.latestChunk, oriNBTsCopyOne)
+
+	c = define.MatrixToChunk(s.latestChunk, s.pos.Dimension.Range(), s.blockPalette)
+	nbts = define.ToChunkNBT(oriNBTsCopyOne)
 
 	return c, nbts, s.timelineUnixTime[len(s.timelineUnixTime)-1], nil
 }

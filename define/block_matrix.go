@@ -82,3 +82,8 @@ func BlockRestore(old BlockMatrix, diff DiffMatrix) BlockMatrix {
 
 	return old
 }
+
+// BlockNoChange reports diff is empty or not.
+func BlockNoChange(diff DiffMatrix) bool {
+	return (len(diff) == 0)
+}

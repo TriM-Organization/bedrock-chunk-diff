@@ -124,7 +124,11 @@ func (s *ChunkTimeline) Compact() error {
 
 	// Update each time point
 	for _, value := range newAllTimePoint {
-		err = s.appendBlocks(value, transaction)
+		err = s.appendBlocks(
+			value,
+			define.ChunkDifference(s.latestChunk, value),
+			transaction,
+		)
 		if err != nil {
 			return fmt.Errorf("(s *ChunkTimeline) Compact: %v", err)
 		}

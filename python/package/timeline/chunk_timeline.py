@@ -70,7 +70,9 @@ class ChunkTimeline:
         """
         return self._chunk_timeline_id >= 0
 
-    def append_disk_chunk(self, chunk_data: ChunkData):
+    def append_disk_chunk(
+        self, chunk_data: ChunkData, nop_when_no_change: bool = False
+    ):
         """
         append_disk_chunk tries append a new chunk whose is disk
         encoding to the timeline of current chunk. Additionally,
@@ -86,6 +88,11 @@ class ChunkTimeline:
 
         Args:
             chunk_data (ChunkData): The chunk you want to append to the timeline.
+            nop_when_no_change (bool, optional):
+                Specific if the append one have no difference between the latest one,
+                then don't append anything to the current chunk timeline.
+                Defaults to False.
+
 
         Raises:
             Exception: When failed to append the chunk.
@@ -96,11 +103,14 @@ class ChunkTimeline:
             chunk_data.nbts,
             chunk_data.chunk_range.start_range,
             chunk_data.chunk_range.end_range,
+            nop_when_no_change,
         )
         if len(err) > 0:
             raise Exception(err)
 
-    def append_network_chunk(self, chunk_data: ChunkData):
+    def append_network_chunk(
+        self, chunk_data: ChunkData, nop_when_no_change: bool = False
+    ):
         """
         append_network_chunk tries append a new chunk whose is network
         encoding to the timeline of current chunk.
@@ -116,6 +126,10 @@ class ChunkTimeline:
 
         Args:
             chunk_data (ChunkData): The chunk you want to append to the timeline.
+            nop_when_no_change (bool, optional):
+                Specific if the append one have no difference between the latest one,
+                then don't append anything to the current chunk timeline.
+                Defaults to False.
 
         Raises:
             Exception: When failed to append the chunk.
@@ -126,6 +140,7 @@ class ChunkTimeline:
             chunk_data.nbts,
             chunk_data.chunk_range.start_range,
             chunk_data.chunk_range.end_range,
+            nop_when_no_change,
         )
         if len(err) > 0:
             raise Exception(err)

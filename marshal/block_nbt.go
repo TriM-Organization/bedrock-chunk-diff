@@ -68,7 +68,7 @@ func BytesToBlockNBT(in []byte) (result []define.NBTWithIndex, err error) {
 
 // MultipleDiffNBTBytes return the bytes represents of diff.
 func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) (result []byte, err error) {
-	if len(diff.Removed) == 0 && len(diff.Added) == 0 && len(diff.Modified) == 0 {
+	if define.NBTNoChange(diff) {
 		return nil, nil
 	}
 

@@ -76,3 +76,13 @@ func LayerRestore(old Layers, diff LayersDiff) Layers {
 
 	return result
 }
+
+// LayerNoChange reports diff is empty or not.
+func LayerNoChange(diff LayersDiff) bool {
+	for _, value := range diff {
+		if !BlockNoChange(value) {
+			return false
+		}
+	}
+	return true
+}
