@@ -99,12 +99,14 @@ func (s *ChunkTimeline) appendNBTs(
 // append and the latest one, then finally will
 // result in NOP.
 //
-// If the size of timeline will overflow max
-// limit, then we will firstly pop some time
-// point from the underlying timeline.
+// Calling Append will make sure there is exist
+// at least one empty space to place the new time
+// point, whether new time point will be added in
+// the end or not.
 //
-// Note the poped time points must be the most
-// earliest one.
+// The way to leave empty space is by calling 
+// Pop, and the poped time points must be the 
+// most earliest one.
 //
 // If current timeline is read only, then calling
 // Append will do no operation.

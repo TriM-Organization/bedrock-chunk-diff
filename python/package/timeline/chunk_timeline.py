@@ -78,10 +78,12 @@ class ChunkTimeline:
         encoding to the timeline of current chunk. Additionally,
         we will also append the block entities of this chunk.
 
-        If the size of timeline will overflow max limit, then we will
-        firstly pop some time point from the underlying timeline.
+        Calling append_disk_chunk will make sure there is exist at
+        least one empty space to place the new time point, whether
+        new time point will be added in the end or not.
 
-        Note the poped time points must be the most earliest one.
+        The way to leave empty space is by calling pop, and the poped
+        time points must be the most earliest one.
 
         If current timeline is read only, then calling append_disk_chunk
         will do no operation.
@@ -116,10 +118,12 @@ class ChunkTimeline:
         encoding to the timeline of current chunk.
         Additionally, we will also append the block entities of this chunk.
 
-        If the size of timeline will overflow max limit, then we will
-        firstly pop some time point from the underlying timeline.
+        Calling append_network_chunk will make sure there is exist at least
+        one empty space to place the new time point, whether new time point
+        will be added in the end or not.
 
-        Note the poped time points must be the most earliest one.
+        The way to leave empty space is by calling pop, and the poped time
+        points must be the most earliest one.
 
         If current timeline is read only, then calling append_network_chunk
         will do no operation.
