@@ -1,5 +1,5 @@
-from bedrockworldoperator import Dimension, ChunkPos
-from bedrockworldoperator import DIMENSION_OVERWORLD
+from .define import Dimension, ChunkPos
+from .constant import DIMENSION_OVERWORLD
 from dataclasses import dataclass
 from .chunk_timeline import ChunkTimeline
 from ..internal.symbol_export_timeline_db import (

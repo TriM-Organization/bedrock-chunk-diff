@@ -33,6 +33,8 @@
 - [Compatibility](#compatibility)
 - [Get started quickly](#get-started-quickly)
 - [Note](#note)
+  - [Internal Details](#internal-details)
+  - [Important](#important)
 - [🐍 Pypi Package](#-pypi-package)
 - [Others](#others)
 
@@ -121,9 +123,9 @@ Additionally, you can reference these codes to write your own ones, and welcome 
 
 # Get started quickly
 ```python
-from bedrockworldoperator import Range, Dimension, ChunkPos
-from bedrockworldoperator import RANGE_OVERWORLD, RANGE_NETHER, RANGE_END
-from bedrockworldoperator import DIMENSION_OVERWORLD, DIMENSION_NETHER, DIMENSION_END
+from .timeline.define import Range, Dimension, ChunkPos
+from .timeline.constant import RANGE_OVERWORLD, RANGE_NETHER, RANGE_END
+from .timeline.constant import DIMENSION_OVERWORLD, DIMENSION_NETHER, DIMENSION_END
 
 from .timeline.define import ChunkData
 from .timeline.timeline_database import new_timeline_database
@@ -140,10 +142,15 @@ We ensure there are enough annotations, so we will not provide extra documents f
 
 
 # Note
+## Internal Details
 You can't used any thing that come from package `internal`, because they are our internal implement details.
 
 If you want to start a contribution on this project, then you maybe need to do some research on this package.
 But we most suggest you study on `c_api` and `timeline` folder first, because they are our **Go** implements.
+
+## Important
+It's unsafe to use `bedrock-chunk-diff` and `bedrock-world-operator` in the same thread (See https://github.com/golang/go/issues/65050#issuecomment-1885233457 for more information).<br/>
+Therefore, you need start multiple thread and use some way to pass message between different thread when you need use multiple **Python** package that based on **Go** (e.g. `bedrock-chunk-diff` and `bedrock-world-operator`).
 
 
 

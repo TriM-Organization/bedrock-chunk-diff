@@ -1,7 +1,6 @@
 import numpy
 from dataclasses import dataclass
-from bedrockworldoperator import Range
-from .define import ChunkData
+from .define import Range, ChunkData
 from ..internal.symbol_export_timeline_db import release_chunk_timeline
 from ..internal.symbol_export_chunk_timeline import (
     ctl_all_time_point,
@@ -459,9 +458,10 @@ class ChunkTimeline:
         )
         if not success:
             return None
-        return ChunkData(
-            sub_chunks, nbts, Range(range_start, range_end)
-        ), update_unix_time
+        return (
+            ChunkData(sub_chunks, nbts, Range(range_start, range_end)),
+            update_unix_time,
+        )
 
     def last_network_chunk(self) -> tuple[ChunkData, int] | None:
         """
@@ -482,9 +482,10 @@ class ChunkTimeline:
         )
         if not success:
             return None
-        return ChunkData(
-            sub_chunks, nbts, Range(range_start, range_end)
-        ), update_unix_time
+        return (
+            ChunkData(sub_chunks, nbts, Range(range_start, range_end)),
+            update_unix_time,
+        )
 
     def pop(self):
         """
