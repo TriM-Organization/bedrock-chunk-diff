@@ -149,8 +149,11 @@ If you want to start a contribution on this project, then you maybe need to do s
 But we most suggest you study on `c_api` and `timeline` folder first, because they are our **Go** implements.
 
 ## Important
-It's unsafe to use `bedrock-chunk-diff` and `bedrock-world-operator` in the same thread (See https://github.com/golang/go/issues/65050#issuecomment-1885233457 for more information).<br/>
-Therefore, you need start multiple threads and use some ways to pass messages between different threads when you need use multiple **Python** packages that based on **Go** (e.g. `bedrock-chunk-diff` and `bedrock-world-operator`).
+It's unsafe to use `bedrock-chunk-diff` and `bedrock-world-operator` in the same program (See https://github.com/golang/go/issues/65050#issuecomment-1885233457 for more information).
+
+Nowadays we find that **Termux** will have this problem, but for **Windows** and most of the **Linux** devices, everything is work as expected.
+
+Therefore, for **Termux**, you need start multiple programs and use some ways to pass messages between different program when you need use multiple **Python** packages that based on **Go** (e.g. `bedrock-chunk-diff` and `bedrock-world-operator`).
 
 
 
