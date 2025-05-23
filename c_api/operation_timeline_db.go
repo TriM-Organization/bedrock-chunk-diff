@@ -13,7 +13,7 @@ var savedTimelineDB = NewSimpleManager[timeline.TimelineDatabase]()
 
 //export NewTimelineDB
 func NewTimelineDB(path *C.char, noGrowSync C.int, noSync C.int) C.longlong {
-	tldb, err := timeline.Open(C.GoString(path), asGoBool(noGrowSync), asGoBool(noGrowSync))
+	tldb, err := timeline.Open(C.GoString(path), asGoBool(noGrowSync), asGoBool(noSync))
 	if err != nil {
 		return -1
 	}
