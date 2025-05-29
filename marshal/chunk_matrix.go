@@ -10,7 +10,7 @@ import (
 )
 
 // ChunkMatrixToBytes return the bytes represents of chunkMatrix.
-func ChunkMatrixToBytes(chunkMatrix define.ChunkMatrix) (result []byte, err error) {
+func ChunkMatrixToBytes(compresser *utils.Compresser, chunkMatrix define.ChunkMatrix) (result []byte, err error) {
 	buf := bytes.NewBuffer(nil)
 
 	for _, value := range chunkMatrix {
@@ -21,7 +21,7 @@ func ChunkMatrixToBytes(chunkMatrix define.ChunkMatrix) (result []byte, err erro
 		return nil, nil
 	}
 
-	result, err = utils.Gzip(buf.Bytes())
+	result, err = compresser.Compress(buf.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("ChunkMatrixToBytes: %v", err)
 	}
@@ -30,14 +30,14 @@ func ChunkMatrixToBytes(chunkMatrix define.ChunkMatrix) (result []byte, err erro
 
 // BytesToChunkMatrix decode ChunkMatrix from bytes.
 // r is the count of sub chunks that this chunk have.
-func BytesToChunkMatrix(in []byte, r operator_define.Range) (result define.ChunkMatrix, err error) {
+func BytesToChunkMatrix(compresser *utils.Compresser, in []byte, r operator_define.Range) (result define.ChunkMatrix, err error) {
 	result = make(define.ChunkMatrix, (r.Height()>>4)+1)
 
 	if len(in) == 0 {
 		return result, nil
 	}
 
-	originBytes, err := utils.Ungzip(in)
+	originBytes, err := compresser.Decompress(in)
 	if err != nil {
 		err = fmt.Errorf("BytesToChunkMatrix: %v", err)
 		return
@@ -54,7 +54,7 @@ func BytesToChunkMatrix(in []byte, r operator_define.Range) (result define.Chunk
 }
 
 // ChunkDiffMatrixToBytes return the bytes represents of chunkDiffMatrix.
-func ChunkDiffMatrixToBytes(chunkDiffMatrix define.ChunkDiffMatrix) (result []byte, err error) {
+func ChunkDiffMatrixToBytes(compresser *utils.Compresser, chunkDiffMatrix define.ChunkDiffMatrix) (result []byte, err error) {
 	buf := bytes.NewBuffer(nil)
 
 	for _, value := range chunkDiffMatrix {
@@ -65,7 +65,7 @@ func ChunkDiffMatrixToBytes(chunkDiffMatrix define.ChunkDiffMatrix) (result []by
 		return nil, nil
 	}
 
-	result, err = utils.Gzip(buf.Bytes())
+	result, err = compresser.Compress(buf.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("ChunkDiffMatrixToBytes: %v", err)
 	}
@@ -74,14 +74,14 @@ func ChunkDiffMatrixToBytes(chunkDiffMatrix define.ChunkDiffMatrix) (result []by
 
 // BytesToChunkDiffMatrix decode ChunkDiffMatrix from bytes.
 // r is the count of sub chunks that this chunk have.
-func BytesToChunkDiffMatrix(in []byte, r operator_define.Range) (result define.ChunkDiffMatrix, err error) {
+func BytesToChunkDiffMatrix(compresser *utils.Compresser, in []byte, r operator_define.Range) (result define.ChunkDiffMatrix, err error) {
 	result = make(define.ChunkDiffMatrix, (r.Height()>>4)+1)
 
 	if len(in) == 0 {
 		return result, nil
 	}
 
-	originBytes, err := utils.Ungzip(in)
+	originBytes, err := compresser.Decompress(in)
 	if err != nil {
 		err = fmt.Errorf("BytesToChunkDiffMatrix: %v", err)
 		return

@@ -64,8 +64,8 @@ func (s *ChunkTimeline) Save() error {
 
 		if bucket.Get(keyBytes) == nil {
 			err = bucket.Put(
-				DatabaseKeyChunkCount,
-				utils.Uint32BinaryAdd(bucket.Get(DatabaseKeyChunkCount), make([]byte, 4), 1),
+				DatabaseSubKeyChunkCount,
+				utils.Uint32BinaryAdd(bucket.Get(DatabaseSubKeyChunkCount), make([]byte, 4), 1),
 			)
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
@@ -135,7 +135,7 @@ func (s *ChunkTimeline) Save() error {
 
 	// Save global data
 	{
-		gzipBytes, err := utils.Gzip(globalData.Bytes())
+		gzipBytes, err := s.compresser.Compress(globalData.Bytes())
 		if err != nil {
 			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
@@ -166,7 +166,7 @@ func (s *ChunkTimeline) Save() error {
 
 	// Latest Chunk
 	{
-		payload, err := marshal.ChunkMatrixToBytes(s.latestChunk)
+		payload, err := marshal.ChunkMatrixToBytes(s.compresser, s.latestChunk)
 		if err != nil {
 			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}
@@ -181,7 +181,7 @@ func (s *ChunkTimeline) Save() error {
 
 	// Latest NBT
 	{
-		payload, err := marshal.BlockNBTBytes(s.latestNBT)
+		payload, err := marshal.BlockNBTBytes(s.compresser, s.latestNBT)
 		if err != nil {
 			return fmt.Errorf("(s *ChunkTimeline) Save: %v", err)
 		}

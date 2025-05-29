@@ -41,7 +41,7 @@ func IterRangeEntireDatabase(
 		waiter := new(sync.WaitGroup)
 
 		err := bucket.ForEach(func(k, v []byte) error {
-			if !foundKeyChunkCount && slices.Equal(k, timeline.DatabaseKeyChunkCount) {
+			if !foundKeyChunkCount && slices.Equal(k, timeline.DatabaseSubKeyChunkCount) {
 				foundKeyChunkCount = true
 				return nil
 			}

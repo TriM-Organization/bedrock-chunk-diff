@@ -104,7 +104,7 @@ func main() {
 		}
 
 		err = db.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
-			countBytes := tx.Bucket(timeline.DatabaseKeyChunkIndex).Get(timeline.DatabaseKeyChunkCount)
+			countBytes := tx.Bucket(timeline.DatabaseKeyChunkIndex).Get(timeline.DatabaseSubKeyChunkCount)
 			if len(countBytes) < 4 {
 				countBytes = make([]byte, 4)
 			}

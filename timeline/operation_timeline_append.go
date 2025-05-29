@@ -22,7 +22,7 @@ func (s *ChunkTimeline) appendBlocks(
 	}
 
 	// Put delta update
-	payload, err := marshal.ChunkDiffMatrixToBytes(chunkDiff)
+	payload, err := marshal.ChunkDiffMatrixToBytes(s.compresser, chunkDiff)
 	if err != nil {
 		return fmt.Errorf("appendBlocks: %v", err)
 	}
@@ -35,7 +35,7 @@ func (s *ChunkTimeline) appendBlocks(
 	}
 
 	// Update Latest Chunk
-	payload, err = marshal.ChunkMatrixToBytes(newerChunk)
+	payload, err = marshal.ChunkMatrixToBytes(s.compresser, newerChunk)
 	if err != nil {
 		return fmt.Errorf("appendBlocks: %v", err)
 	}
@@ -63,7 +63,7 @@ func (s *ChunkTimeline) appendNBTs(
 	}
 
 	// Put delta update
-	payload, err := marshal.MultipleDiffNBTBytes(nbtDiff)
+	payload, err := marshal.MultipleDiffNBTBytes(s.compresser, nbtDiff)
 	if err != nil {
 		return fmt.Errorf("appendNBTs: %v", err)
 	}
@@ -76,7 +76,7 @@ func (s *ChunkTimeline) appendNBTs(
 	}
 
 	// Update Latest NBT
-	payload, err = marshal.BlockNBTBytes(newerNBTs)
+	payload, err = marshal.BlockNBTBytes(s.compresser, newerNBTs)
 	if err != nil {
 		return fmt.Errorf("appendNBTs: %v", err)
 	}

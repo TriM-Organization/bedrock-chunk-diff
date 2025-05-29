@@ -25,7 +25,7 @@ func (s *ChunkTimeline) next() (
 			define.IndexBlockDu(s.pos, s.ptr),
 		)
 
-		diff, err := marshal.BytesToChunkDiffMatrix(payload, s.pos.Dimension.Range())
+		diff, err := marshal.BytesToChunkDiffMatrix(s.compresser, payload, s.pos.Dimension.Range())
 		if err != nil {
 			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
 		}
@@ -39,7 +39,7 @@ func (s *ChunkTimeline) next() (
 			define.IndexNBTDu(s.pos, s.ptr),
 		)
 
-		diff, err := marshal.BytesToMultipleDiffNBT(payload)
+		diff, err := marshal.BytesToMultipleDiffNBT(s.compresser, payload)
 		if err != nil {
 			return nil, nil, 0, false, fmt.Errorf("next: %v", err)
 		}

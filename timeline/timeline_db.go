@@ -4,20 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/TriM-Organization/bedrock-chunk-diff/utils"
 	"go.etcd.io/bbolt"
-)
-
-var (
-	DatabaseKeyRoot       = []byte("root")
-	DatabaseKeyChunkIndex = []byte("chunk-index")
-	DatabaseKeyChunkCount = []byte("chunk-count")
 )
 
 // TimelineDB implements chunk timeline and
 // history record provider based on bbolt.
 type TimelineDB struct {
 	DB
-	sessions *InProgressSession
+	sessions   *InProgressSession
+	compresser *utils.Compresser
 }
 
 // Open open a level database that used for
@@ -54,18 +50,60 @@ func Open(path string, noGrowSync bool, noSync bool) (result TimelineDatabase, e
 		return nil, fmt.Errorf("Open: %v", err)
 	}
 
-	err = db.Update(func(tx *bbolt.Tx) error {
-		_, err = tx.CreateBucketIfNotExists(DatabaseKeyRoot)
-		if err != nil {
-			return err
-		}
+	err = db.Update(func(tx *bbolt.Tx) (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("%v", err)
+			}
+		}()
+
+		// DatabaseKeyRoot
+		var databaseIsInit bool
+		_, err = tx.CreateBucket(DatabaseKeyRoot)
+		databaseIsInit = (err != nil)
+
+		// DatabaseKeyChunkIndex/DatabaseSubKeyChunkCount
 		bucket, err := tx.CreateBucketIfNotExists(DatabaseKeyChunkIndex)
 		if err != nil {
 			return err
 		}
-		if len(bucket.Get(DatabaseKeyChunkCount)) < 4 {
-			return bucket.Put(DatabaseKeyChunkCount, make([]byte, 4))
+		if len(bucket.Get(DatabaseSubKeyChunkCount)) < 4 {
+			err = bucket.Put(DatabaseSubKeyChunkCount, make([]byte, 4))
+			if err != nil {
+				return err
+			}
 		}
+
+		// DatabaseKeyMetadata
+		{
+			bucket, err := tx.CreateBucketIfNotExists(DatabaseKeyMetadata)
+			if err != nil {
+				return err
+			}
+
+			// DatabaseSubKeyVersion
+			if len(bucket.Get(DatabaseSubKeyVersion)) == 0 {
+				if databaseIsInit {
+					err = bucket.Put(DatabaseSubKeyCompressMethod, CompressMethodBytesByID(CompressMethodGzip))
+					if err != nil {
+						return err
+					}
+				}
+				if err = bucket.Put(DatabaseSubKeyVersion, DatabaseCurrentVersion); err != nil {
+					return err
+				}
+			}
+
+			// DatabaseSubKeyCompressMethod
+			compressMethodBytes := bucket.Get(DatabaseSubKeyCompressMethod)
+			if len(compressMethodBytes) == 0 {
+				bucket.Put(DatabaseSubKeyCompressMethod, CompressMethodBytesByID(CompressMethodZlib))
+				timelineDB.compresser = CompresserFuncByID(CompressMethodZlib)
+			} else {
+				timelineDB.compresser = CompresserFuncByID(CompressMethodByBytes(compressMethodBytes))
+			}
+		}
+
 		return nil
 	})
 	if err != nil {

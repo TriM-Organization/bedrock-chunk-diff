@@ -13,8 +13,6 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-const DefaultMaxLimit = 7
-
 // ChunkTimeline records the timeline of a chunk,
 // and it contains the change logs about this chunk
 // on this timeline.
@@ -29,7 +27,9 @@ const DefaultMaxLimit = 7
 // So, it's your responsibility to make ensure there is only
 // one thread is using this object.
 type ChunkTimeline struct {
-	db          DB
+	db         DB
+	compresser *utils.Compresser
+
 	pos         define.DimChunk
 	releaseFunc func()
 
@@ -91,6 +91,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 
 	result = &ChunkTimeline{
 		db:               t.DB,
+		compresser:       t.compresser,
 		pos:              pos,
 		releaseFunc:      releaseFunc,
 		isReadOnly:       readOnly,
@@ -107,7 +108,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 		latestNBT:        nil,
 	}
 
-	err = t.DB.(*database).bdb.View(func(tx *bbolt.Tx) error {
+	err = t.UnderlyingDatabase().View(func(tx *bbolt.Tx) error {
 		exist = (tx.Bucket(DatabaseKeyChunkIndex).Get(define.Index(pos)) != nil)
 		return nil
 	})
@@ -123,7 +124,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 	gzippedGlobalData := t.Get(
 		define.Sum(pos, []byte(define.KeyChunkGlobalData)...),
 	)
-	globalData, err := utils.Ungzip(gzippedGlobalData)
+	globalData, err := t.compresser.Decompress(gzippedGlobalData)
 	if err != nil {
 		return nil, fmt.Errorf("NewChunkTimeline: %v", err)
 	}
@@ -179,7 +180,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 			define.Sum(pos, define.KeyLatestChunk),
 		)
 
-		chunkMatrix, err := marshal.BytesToChunkMatrix(latestChunkBytes, pos.Dimension.Range())
+		chunkMatrix, err := marshal.BytesToChunkMatrix(t.compresser, latestChunkBytes, pos.Dimension.Range())
 		if err != nil {
 			return nil, fmt.Errorf("NewChunkTimeline: %v", err)
 		}
@@ -193,7 +194,7 @@ func (t *TimelineDB) NewChunkTimeline(pos define.DimChunk, readOnly bool) (resul
 			define.Sum(pos, []byte(define.KeyLatestNBT)...),
 		)
 
-		latestNBT, err := marshal.BytesToBlockNBT(latestNBTBytes)
+		latestNBT, err := marshal.BytesToBlockNBT(t.compresser, latestNBTBytes)
 		if err != nil {
 			return nil, fmt.Errorf("NewChunkTimeline: %v", err)
 		}
@@ -248,8 +249,8 @@ func (t *TimelineDB) DeleteChunkTimeline(pos define.DimChunk) error {
 	bucket := tran.(*transaction).tx.Bucket(DatabaseKeyChunkIndex)
 	if bucket.Get(keyBytes) != nil {
 		err = bucket.Put(
-			DatabaseKeyChunkCount,
-			utils.Uint32BinaryAdd(bucket.Get(DatabaseKeyChunkCount), []byte{1, 0, 0, 0}, -1),
+			DatabaseSubKeyChunkCount,
+			utils.Uint32BinaryAdd(bucket.Get(DatabaseSubKeyChunkCount), []byte{1, 0, 0, 0}, -1),
 		)
 		if err != nil {
 			return fmt.Errorf("DeleteChunkTimeline: %v", err)

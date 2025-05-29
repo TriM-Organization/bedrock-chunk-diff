@@ -13,7 +13,7 @@ import (
 // BlockNBTBytes return the bytes represents of blockNBT.
 // blockNBT must contains all NBT blocks from the same chunk
 // and in the same time.
-func BlockNBTBytes(blockNBT []define.NBTWithIndex) (result []byte, err error) {
+func BlockNBTBytes(compresser *utils.Compresser, blockNBT []define.NBTWithIndex) (result []byte, err error) {
 	if len(blockNBT) == 0 {
 		return nil, nil
 	}
@@ -25,7 +25,7 @@ func BlockNBTBytes(blockNBT []define.NBTWithIndex) (result []byte, err error) {
 		utils.MarshalNBT(buf, value.NBT, "")
 	}
 
-	result, err = utils.Gzip(buf.Bytes())
+	result, err = compresser.Compress(buf.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("BlockNBTBytes: %v", err)
 	}
@@ -35,12 +35,12 @@ func BlockNBTBytes(blockNBT []define.NBTWithIndex) (result []byte, err error) {
 // BytesToBlockNBT decode multiple NBTWithIndex from bytes.
 // Ensure all element in returned slice all represents the NBT blocks
 // in the same chunk and in the same time.
-func BytesToBlockNBT(in []byte) (result []define.NBTWithIndex, err error) {
+func BytesToBlockNBT(compresser *utils.Compresser, in []byte) (result []define.NBTWithIndex, err error) {
 	if len(in) == 0 {
 		return
 	}
 
-	originBytes, err := utils.Ungzip(in)
+	originBytes, err := compresser.Decompress(in)
 	if err != nil {
 		err = fmt.Errorf("BytesToBlockNBT: %v", err)
 		return
@@ -67,7 +67,7 @@ func BytesToBlockNBT(in []byte) (result []define.NBTWithIndex, err error) {
 }
 
 // MultipleDiffNBTBytes return the bytes represents of diff.
-func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) (result []byte, err error) {
+func MultipleDiffNBTBytes(compresser *utils.Compresser, diff define.MultipleDiffNBT) (result []byte, err error) {
 	if define.NBTNoChange(diff) {
 		return nil, nil
 	}
@@ -93,7 +93,7 @@ func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) (result []byte, err error
 		w.ByteSlice(&value.DiffNBT)
 	}
 
-	result, err = utils.Gzip(buf.Bytes())
+	result, err = compresser.Compress(buf.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("MultipleDiffNBTBytes: %v", err)
 	}
@@ -101,14 +101,14 @@ func MultipleDiffNBTBytes(diff define.MultipleDiffNBT) (result []byte, err error
 }
 
 // BytesToMultipleDiffNBT decode MultipleDiffNBT from bytes.
-func BytesToMultipleDiffNBT(in []byte) (result define.MultipleDiffNBT, err error) {
+func BytesToMultipleDiffNBT(compresser *utils.Compresser, in []byte) (result define.MultipleDiffNBT, err error) {
 	var length uint32
 
 	if len(in) == 0 {
 		return
 	}
 
-	originBytes, err := utils.Ungzip(in)
+	originBytes, err := compresser.Decompress(in)
 	if err != nil {
 		err = fmt.Errorf("BytesToMultipleDiffNBT: %v", err)
 		return

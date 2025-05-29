@@ -40,7 +40,7 @@ func (s *ChunkTimeline) Pop() error {
 				define.IndexBlockDu(s.pos, s.barrierLeft),
 			)
 
-			diff, err := marshal.BytesToChunkDiffMatrix(payload, s.pos.Dimension.Range())
+			diff, err := marshal.BytesToChunkDiffMatrix(s.compresser, payload, s.pos.Dimension.Range())
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
@@ -61,7 +61,7 @@ func (s *ChunkTimeline) Pop() error {
 				break
 			}
 
-			diff, err := marshal.BytesToChunkDiffMatrix(payload, s.pos.Dimension.Range())
+			diff, err := marshal.BytesToChunkDiffMatrix(s.compresser, payload, s.pos.Dimension.Range())
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
@@ -77,7 +77,7 @@ func (s *ChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
 
-			payload, err := marshal.ChunkDiffMatrixToBytes(newDiff)
+			payload, err := marshal.ChunkDiffMatrixToBytes(s.compresser, newDiff)
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
@@ -102,7 +102,7 @@ func (s *ChunkTimeline) Pop() error {
 				define.IndexNBTDu(s.pos, s.barrierLeft),
 			)
 
-			diff, err := marshal.BytesToMultipleDiffNBT(payload)
+			diff, err := marshal.BytesToMultipleDiffNBT(s.compresser, payload)
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
@@ -126,7 +126,7 @@ func (s *ChunkTimeline) Pop() error {
 				break
 			}
 
-			diff, err := marshal.BytesToMultipleDiffNBT(payload)
+			diff, err := marshal.BytesToMultipleDiffNBT(s.compresser, payload)
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
@@ -149,7 +149,7 @@ func (s *ChunkTimeline) Pop() error {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
 
-			payload, err := marshal.MultipleDiffNBTBytes(*newDiff)
+			payload, err := marshal.MultipleDiffNBTBytes(s.compresser, *newDiff)
 			if err != nil {
 				return fmt.Errorf("(s *ChunkTimeline) Pop: %v", err)
 			}
