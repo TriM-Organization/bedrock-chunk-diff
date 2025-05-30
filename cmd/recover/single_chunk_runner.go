@@ -51,7 +51,7 @@ func SingleChunkRunner(
 		index = 0
 	}
 
-	if index >= tl.AllTimePointLen() {
+	if index >= tl.AllTimePointLen()-1 {
 		c, nbts, _, err = tl.Last()
 		if err != nil {
 			pterm.Warning.Printf("SingleChunkRunner: %v\n", err)

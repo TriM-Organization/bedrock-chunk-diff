@@ -144,8 +144,13 @@ func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]an
 		}
 	}
 
+	oriNBTsCopyOne, err := define.NBTDeepCopy(oriNBTs)
+	if err != nil {
+		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) JumpTo: %v", err)
+	}
+
 	c = define.MatrixToChunk(oriChunk, s.pos.Dimension.Range(), s.blockPalette)
-	nbts = define.ToChunkNBT(oriNBTs)
+	nbts = define.ToChunkNBT(oriNBTsCopyOne)
 
 	return
 }
@@ -165,7 +170,7 @@ func (s *ChunkTimeline) Last() (
 
 	oriNBTsCopyOne, err := define.NBTDeepCopy(s.latestNBT)
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("Last: %v", err)
+		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) Last: %v", err)
 	}
 
 	c = define.MatrixToChunk(s.latestChunk, s.pos.Dimension.Range(), s.blockPalette)
