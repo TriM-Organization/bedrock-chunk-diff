@@ -1,6 +1,8 @@
 package define
 
 import (
+	"fmt"
+
 	"github.com/TriM-Organization/bedrock-world-operator/block"
 	"github.com/TriM-Organization/bedrock-world-operator/chunk"
 	"github.com/TriM-Organization/bedrock-world-operator/define"
@@ -108,9 +110,13 @@ func FromChunkNBT(chunkPos define.ChunkPos, nbts []map[string]any) (result []NBT
 }
 
 // ToChunkNBT converts nbts to []map[string]any.
-// Note that the returned slice is not the deep copied NBTs.
-func ToChunkNBT(nbts []NBTWithIndex) (result []map[string]any) {
-	for _, value := range nbts {
+// Note that the returned slice is the deep copied NBTs.
+func ToChunkNBT(nbts []NBTWithIndex) (result []map[string]any, err error) {
+	nbtCopyOne, err := NBTDeepCopy(nbts)
+	if err != nil {
+		return nil, fmt.Errorf("ToChunkNBT: %v", err)
+	}
+	for _, value := range nbtCopyOne {
 		result = append(result, value.NBT)
 	}
 	return

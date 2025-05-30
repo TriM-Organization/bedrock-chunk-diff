@@ -99,7 +99,10 @@ func (s *ChunkTimeline) Next() (
 	}
 
 	c = define.MatrixToChunk(oriChunk, s.pos.Dimension.Range(), s.blockPalette)
-	nbts = define.ToChunkNBT(oriNBTs)
+	nbts, err = define.ToChunkNBT(oriNBTs)
+	if err != nil {
+		return nil, nil, 0, false, fmt.Errorf("(s *ChunkTimeline) Next: %v", err)
+	}
 
 	return
 }
@@ -144,13 +147,11 @@ func (s *ChunkTimeline) JumpTo(index uint) (c *chunk.Chunk, nbts []map[string]an
 		}
 	}
 
-	oriNBTsCopyOne, err := define.NBTDeepCopy(oriNBTs)
+	c = define.MatrixToChunk(oriChunk, s.pos.Dimension.Range(), s.blockPalette)
+	nbts, err = define.ToChunkNBT(oriNBTs)
 	if err != nil {
 		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) JumpTo: %v", err)
 	}
-
-	c = define.MatrixToChunk(oriChunk, s.pos.Dimension.Range(), s.blockPalette)
-	nbts = define.ToChunkNBT(oriNBTsCopyOne)
 
 	return
 }
@@ -168,13 +169,11 @@ func (s *ChunkTimeline) Last() (
 		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) Last: Current chunk timeline is empty")
 	}
 
-	oriNBTsCopyOne, err := define.NBTDeepCopy(s.latestNBT)
+	c = define.MatrixToChunk(s.latestChunk, s.pos.Dimension.Range(), s.blockPalette)
+	nbts, err = define.ToChunkNBT(s.latestNBT)
 	if err != nil {
 		return nil, nil, 0, fmt.Errorf("(s *ChunkTimeline) Last: %v", err)
 	}
-
-	c = define.MatrixToChunk(s.latestChunk, s.pos.Dimension.Range(), s.blockPalette)
-	nbts = define.ToChunkNBT(oriNBTsCopyOne)
 
 	return c, nbts, s.timelineUnixTime[len(s.timelineUnixTime)-1], nil
 }
