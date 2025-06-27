@@ -3,8 +3,8 @@ module github.com/TriM-Organization/bedrock-chunk-diff
 go 1.24
 
 require (
-	github.com/TriM-Organization/bedrock-world-operator v1.1.4
-	github.com/sandertv/gophertunnel v1.34.1
+	github.com/TriM-Organization/bedrock-world-operator v1.2.0
+	github.com/sandertv/gophertunnel v1.37.0
 )
 
 require (
@@ -27,7 +27,7 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/df-mc/worldupgrader v1.0.11 // indirect
+	github.com/df-mc/worldupgrader v1.0.15 // indirect
 	github.com/go-gl/mathgl v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/kr/binarydist v0.1.0
