@@ -15,10 +15,6 @@ github.com/MarvinJWendt/testza v0.3.0/go.mod h1:eFcL4I0idjtIx8P9C6KkAuLgATNKpX4/
 github.com/MarvinJWendt/testza v0.4.2/go.mod h1:mSdhXiKH8sg/gQehJ63bINcCKp7RtYewEjXsvsVUPbE=
 github.com/MarvinJWendt/testza v0.5.2 h1:53KDo64C1z/h/d/stCYCPY69bt/OSwjq5KpFNwi+zB4=
 github.com/MarvinJWendt/testza v0.5.2/go.mod h1:xu53QFE5sCdjtMCKk8YMQ2MnymimEctc4n3EjyIYvEY=
-github.com/TriM-Organization/bedrock-world-operator v1.2.0 h1:b2UDIchmim4A/H5IL4VzXeNXTsz8aT+9EHdxWx6oMxA=
-github.com/TriM-Organization/bedrock-world-operator v1.2.0/go.mod h1:VVE6vYn22bocPGKkmfAMFV1CXPTiFh25jZn/aAJM/5s=
-github.com/TriM-Organization/bedrock-world-operator v1.2.1 h1:YLrvBiYGD1pj3b26NqgjsJod026GRfbQjP6JQbdkLgw=
-github.com/TriM-Organization/bedrock-world-operator v1.2.1/go.mod h1:VVE6vYn22bocPGKkmfAMFV1CXPTiFh25jZn/aAJM/5s=
 github.com/TriM-Organization/bedrock-world-operator v1.2.2 h1:JGkfjZk1CYzRKYNxWhh6uU42dFr7BAOaYlRAfztGfiE=
 github.com/TriM-Organization/bedrock-world-operator v1.2.2/go.mod h1:VVE6vYn22bocPGKkmfAMFV1CXPTiFh25jZn/aAJM/5s=
 github.com/atomicgo/cursor v0.0.1/go.mod h1:cBON2QmmrysudxNBFthvMtN32r3jxVRIvzkUiF/RuIk=
