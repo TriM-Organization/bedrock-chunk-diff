@@ -79,7 +79,7 @@ func main() {
 	}
 	defer db.CloseTimelineDB()
 
-	w, err := world.Open(*output)
+	w, err := world.Open(*output, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
