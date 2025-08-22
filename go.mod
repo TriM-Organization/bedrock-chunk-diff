@@ -3,7 +3,7 @@ module github.com/TriM-Organization/bedrock-chunk-diff
 go 1.24
 
 require (
-	github.com/TriM-Organization/bedrock-world-operator v1.3.0
+	github.com/TriM-Organization/bedrock-world-operator v1.3.1
 	github.com/sandertv/gophertunnel v1.37.0
 )
 
