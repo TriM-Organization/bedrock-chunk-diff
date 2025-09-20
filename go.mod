@@ -3,7 +3,7 @@ module github.com/TriM-Organization/bedrock-chunk-diff
 go 1.24
 
 require (
-	github.com/TriM-Organization/bedrock-world-operator v1.3.1
+	github.com/TriM-Organization/bedrock-world-operator v1.4.0
 	github.com/sandertv/gophertunnel v1.37.0
 )
 
@@ -11,6 +11,7 @@ require (
 	atomicgo.dev/cursor v0.2.0 // indirect
 	atomicgo.dev/keyboard v0.2.9 // indirect
 	atomicgo.dev/schedule v0.1.0 // indirect
+	github.com/Happy2018new/worldupgrader v1.1.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/deatil/go-cryptobin v1.1.1005 // indirect
 	github.com/df-mc/goleveldb v1.1.9 // indirect
@@ -30,7 +31,6 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/df-mc/worldupgrader v1.0.15 // indirect
 	github.com/go-gl/mathgl v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/kr/binarydist v0.1.0
