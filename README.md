@@ -52,7 +52,7 @@
 The finest granularity of delta update is the Chunk.
 That means, the user is easily (and also very fast) to record the time point for the Minecraft game saves when the server is running.
 
-So, for a chunk that not loaded, they will nerver get update, then their is no newer time point to be created.
+So, for a chunk that not loaded, they will never get update, then their is no newer time point to be created.
 Therefore, we just need to track the chunks that player loaded, so this package provided a very useful delta update implements.
 
 Additionally, we finally used [single file database](https://github.com/etcd-io/bbolt) to record everything, so it's very easy for you to backup the timeline database, just copy one file is OK.
