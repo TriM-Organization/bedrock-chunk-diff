@@ -160,7 +160,7 @@ Therefore, for **Termux**, you need start multiple programs and use some ways to
 
 
 # 🐍 Pypi Package
-This package **bedrock-world-operator** is been uploaded to **Pypi** ，and you can use `pip install bedrock-chunk-diff` to install.
+This package **bedrock-world-operator** is been uploaded to **Pypi**, and you can use `pip install bedrock-chunk-diff` to install.
 
 See [📦 bedrock-chunk-diff on Pypi](https://pypi.org/project/bedrock-chunk-diff) to learn more.
 
